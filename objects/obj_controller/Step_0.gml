@@ -1,0 +1,62 @@
+// Limit the time step so a lag spike cannot move the world an unsafe distance.
+var delta_seconds = min(delta_time / 1000000, 1 / 15);
+
+world_scroll_speed = min(
+    world_scroll_speed + world_scroll_acceleration * delta_seconds,
+    world_scroll_speed_max
+);
+
+world_scroll_delta = world_scroll_speed * delta_seconds;
+distance_travelled += world_scroll_delta;
+
+blocker_spawn_timer -= delta_seconds;
+
+if (blocker_spawn_timer <= 0)
+{
+    var blocker_object = choose(obj_blocker1, obj_blocker2, obj_blocker3);
+    var blocker_sprite = object_get_sprite(blocker_object);
+    var blocker_width = sprite_get_width(blocker_sprite);
+    var blocker_height = sprite_get_height(blocker_sprite);
+
+    var spawn_x_min = blocker_spawn_left;
+    var spawn_x_max = blocker_spawn_right - blocker_width;
+    var spawn_y = -blocker_height - blocker_spawn_buffer;
+
+    if (spawn_x_max >= spawn_x_min)
+    {
+        repeat (blocker_spawn_attempts)
+        {
+            var spawn_x = irandom_range(spawn_x_min, spawn_x_max);
+
+            if (collision_rectangle(
+                spawn_x,
+                spawn_y,
+                spawn_x + blocker_width - 1,
+                spawn_y + blocker_height - 1,
+                par_scrolling_blocker,
+                false,
+                true
+            ) == noone)
+            {
+                instance_create_layer(spawn_x, spawn_y, "Instances", blocker_object);
+                break;
+            }
+        }
+    }
+
+    blocker_spawn_timer = random_range(
+        blocker_spawn_interval_min,
+        blocker_spawn_interval_max
+    );
+}
+// Start the cooldown only while no UFO Catcher is active.
+if (!instance_exists(obj_ufo_catcher))
+{
+    ufo_spawn_timer -= delta_seconds;
+
+    if (ufo_spawn_timer <= 0)
+    {
+        instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
+        ufo_spawn_timer = random_range(ufo_cooldown_min, ufo_cooldown_max);
+    }
+}
