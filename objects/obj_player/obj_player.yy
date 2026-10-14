@@ -32,8 +32,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"spr_player",
-    "path":"sprites/spr_player/spr_player.yy",
+    "name":"spr_cat_front_bag",
+    "path":"sprites/spr_cat_front_bag/spr_cat_front_bag.yy",
   },
   "spriteMaskId":null,
   "visible":true,

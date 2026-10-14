@@ -1,39 +1,55 @@
-var horizontal_scale = ufo_draw_width / sprite_get_width(sprite_index);
-
-if (ufo_side == -1)
-{
-    horizontal_scale = -horizontal_scale;
-}
-
-draw_sprite_ext(
-    sprite_index,
-    image_index,
-    x,
-    y,
-    horizontal_scale,
-    1,
-    0,
-    c_white,
-    1
+var source_height = sprite_get_height(sprite_index);
+var draw_top = y - sprite_get_yoffset(sprite_index);
+var middle_draw_width = max(
+    ufo_middle_source_width,
+    ufo_draw_width - ufo_head_width - ufo_tail_width
 );
-// Temporary visual aid for tuning the claw-head capture area.
-if (ufo_state == 4)
-{
-    var debug_claw_x = (ufo_side == 1)
-        ? x - ufo_draw_width + ufo_claw_center_offset
-        : x + ufo_draw_width - ufo_claw_center_offset;
-    var debug_half_width = ufo_hitbox_width * 0.5;
-    var debug_half_height = ufo_hitbox_height * 0.5;
+var middle_scale = middle_draw_width / ufo_middle_source_width;
 
-    draw_set_alpha(0.9);
-    draw_set_color(instance_exists(ufo_caught_player) ? c_lime : c_red);
-    draw_rectangle(
-        debug_claw_x - debug_half_width,
-        y - debug_half_height,
-        debug_claw_x + debug_half_width,
-        y + debug_half_height,
-        true
+if (ufo_side == 1)
+{
+    // Right-side attack: the head is the far-left piece.
+    var draw_left = x - ufo_draw_width;
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        0, 0, ufo_head_width, source_height,
+        draw_left, draw_top,
+        1, 1, c_white, 1
     );
-    draw_set_color(c_white);
-    draw_set_alpha(1);
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        ufo_head_width, 0, ufo_middle_source_width, source_height,
+        draw_left + ufo_head_width, draw_top,
+        middle_scale, 1, c_white, 1
+    );
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        ufo_head_width + ufo_middle_source_width, 0,
+        ufo_tail_width, source_height,
+        x - ufo_tail_width, draw_top,
+        1, 1, c_white, 1
+    );
+}
+else
+{
+    // Left-side attack: mirror each piece and reverse their placement.
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        ufo_head_width + ufo_middle_source_width, 0,
+        ufo_tail_width, source_height,
+        x + ufo_tail_width, draw_top,
+        -1, 1, c_white, 1
+    );
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        ufo_head_width, 0, ufo_middle_source_width, source_height,
+        x + ufo_tail_width + middle_draw_width, draw_top,
+        -middle_scale, 1, c_white, 1
+    );
+    draw_sprite_part_ext(
+        sprite_index, image_index,
+        0, 0, ufo_head_width, source_height,
+        x + ufo_draw_width, draw_top,
+        -1, 1, c_white, 1
+    );
 }

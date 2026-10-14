@@ -1,5 +1,5 @@
 // Limit the time step so a lag spike cannot move the world an unsafe distance.
-var delta_seconds = min(delta_time / 1000000, 1 / 15);
+var delta_seconds = game_delta_seconds();
 
 world_scroll_speed = min(
     world_scroll_speed + world_scroll_acceleration * delta_seconds,
@@ -11,7 +11,7 @@ distance_travelled += world_scroll_delta;
 
 blocker_spawn_timer -= delta_seconds;
 
-if (blocker_spawn_timer <= 0)
+if (debug_spawn_blockers && blocker_spawn_timer <= 0)
 {
     var blocker_object = choose(obj_blocker1, obj_blocker2, obj_blocker3);
     var blocker_sprite = object_get_sprite(blocker_object);
@@ -49,14 +49,36 @@ if (blocker_spawn_timer <= 0)
         blocker_spawn_interval_max
     );
 }
-// Start the cooldown only while no UFO Catcher is active.
-if (!instance_exists(obj_ufo_catcher))
-{
-    ufo_spawn_timer -= delta_seconds;
+var lockon_is_clear = !instance_exists(obj_ufo_catcher)
+    && !instance_exists(obj_key_pusher);
 
-    if (ufo_spawn_timer <= 0)
+// Temporary manual test callers: K = Key Pusher, U = UFO Catcher.
+if (debug_manual_lockon)
+{
+    if (lockon_is_clear)
     {
-        instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
-        ufo_spawn_timer = random_range(ufo_cooldown_min, ufo_cooldown_max);
+        if (keyboard_check_pressed(ord("K")))
+        {
+            instance_create_layer(0, 0, "Instances", obj_key_pusher);
+        }
+        else if (keyboard_check_pressed(ord("U")))
+        {
+            instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
+        }
+    }
+}
+// Normal shared random scheduler, retained for when testing is finished.
+else if (lockon_is_clear)
+{
+    lockon_spawn_timer -= delta_seconds;
+
+    if (lockon_spawn_timer <= 0)
+    {
+        var lockon_object = choose(obj_ufo_catcher, obj_key_pusher);
+        instance_create_layer(0, 0, "Instances", lockon_object);
+        lockon_spawn_timer = random_range(
+            lockon_cooldown_min,
+            lockon_cooldown_max
+        );
     }
 }

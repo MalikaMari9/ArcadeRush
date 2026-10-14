@@ -14,13 +14,17 @@ blocker_spawn_interval_max = 4;
 blocker_spawn_attempts = 8;
 blocker_spawn_buffer = 64;
 
+// Temporary hazard testing switches.
+debug_spawn_blockers = false;
+debug_manual_lockon = true;
+
 // Current control-area edges created by the side margins in rm_gameRoom.
 blocker_spawn_left = 128;
 blocker_spawn_right = 960;
 
-// Only one lock-on hazard may be active at a time.
-ufo_spawn_timer = 3;
-ufo_cooldown_min = 10;
-ufo_cooldown_max = 20;
+// UFO and Key Pusher share one scheduler and never overlap.
+lockon_spawn_timer = 3;
+lockon_cooldown_min = 10;
+lockon_cooldown_max = 20;
 
 randomise();
