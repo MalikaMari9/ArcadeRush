@@ -65,6 +65,7 @@ function player_apply_hazard_damage()
 function player_start_hazard_invulnerability()
 {
     invulnerable = true;
+    phase_through_obstacles = true;
     invulnerability_timer = invulnerability_duration;
     invulnerability_blink_timer = 0;
     image_alpha = 1;

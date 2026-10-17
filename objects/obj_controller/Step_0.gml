@@ -35,30 +35,47 @@ if (debug_spawn_blockers && blocker_spawn_timer <= 0)
     var blocker_width = sprite_get_width(blocker_sprite);
     var blocker_height = sprite_get_height(blocker_sprite);
 
-    var spawn_x_min = blocker_spawn_left;
-    var spawn_x_max = blocker_spawn_right - blocker_width;
-    var spawn_y = -blocker_height - blocker_spawn_buffer;
+    // Create above the room first so the inherited lane_occupy property can
+    // determine placement. Sprite width is a safe fallback while an object
+    // property edit is still unsaved in the IDE.
+    var spawned_blocker = instance_create_layer(
+        0,
+        -blocker_height - blocker_spawn_buffer,
+        "Obstacles",
+        blocker_object
+    );
 
-    if (spawn_x_max >= spawn_x_min)
+    if (spawned_blocker != noone)
     {
-        repeat (blocker_spawn_attempts)
-        {
-            var spawn_x = irandom_range(spawn_x_min, spawn_x_max);
+        var property_lane_span = round(spawned_blocker.lane_occupy);
+        var width_lane_span = round(blocker_width / blocker_lane_width);
+        var lane_span = clamp(
+            max(property_lane_span, width_lane_span),
+            1,
+            blocker_lane_count
+        );
+        spawned_blocker.lane_occupy = lane_span;
 
-            if (collision_rectangle(
-                spawn_x,
-                spawn_y,
-                spawn_x + blocker_width - 1,
-                spawn_y + blocker_height - 1,
-                par_scrolling_blocker,
-                false,
-                true
-            ) == noone)
-            {
-                instance_create_layer(spawn_x, spawn_y, "Instances", blocker_object);
-                break;
-            }
+        var maximum_lane_start = blocker_lane_count - lane_span;
+        var lane_start = irandom(maximum_lane_start);
+
+        // Avoid repeating the exact same starting lane when another valid
+        // position exists, while keeping the result random.
+        if (maximum_lane_start > 0 && lane_start == blocker_previous_lane_start)
+        {
+            lane_start = (lane_start + irandom_range(1, maximum_lane_start))
+                mod (maximum_lane_start + 1);
         }
+
+        var lane_center = blocker_lane_left
+            + (lane_start + lane_span * 0.5) * blocker_lane_width;
+        var blocker_bottom_from_origin = blocker_height
+            - sprite_get_yoffset(blocker_sprite);
+
+        spawned_blocker.x = lane_center;
+        spawned_blocker.y = -blocker_bottom_from_origin
+            - blocker_spawn_buffer;
+        blocker_previous_lane_start = lane_start;
     }
 
     blocker_spawn_timer = random_range(

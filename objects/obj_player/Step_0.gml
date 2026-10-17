@@ -78,6 +78,17 @@ else
     image_alpha = 1;
 }
 
+// If protection ends while overlapping a moving obstacle, remain intangible
+// until completely clear so collision cannot reactivate around the player.
+if (
+    phase_through_obstacles
+    && !invulnerable
+    && !place_meeting(x, y, par_scrolling_blocker)
+)
+{
+    phase_through_obstacles = false;
+}
+
 // The catcher owns the player's position until it releases them.
 if (ufo_captured)
 {
@@ -138,6 +149,7 @@ var delta_seconds = delta_time / 1000000;
 
 var move_x = input_x * move_speed * delta_seconds;
 var move_y = input_y * move_speed * delta_seconds;
+var movement_blocker = phase_through_obstacles ? obj_margin : par_blocker;
 
 // Resolve horizontal movement first. Sub-pixel steps prevent tunneling.
 if (move_x != 0)
@@ -147,7 +159,7 @@ if (move_x != 0)
 
     repeat (horizontal_steps)
     {
-        if (!place_meeting(x + horizontal_step, y, par_blocker))
+        if (!place_meeting(x + horizontal_step, y, movement_blocker))
         {
             x += horizontal_step;
         }
@@ -166,7 +178,7 @@ if (move_y != 0)
 
     repeat (vertical_steps)
     {
-        if (!place_meeting(x, y + vertical_step, par_blocker))
+        if (!place_meeting(x, y + vertical_step, movement_blocker))
         {
             y += vertical_step;
         }

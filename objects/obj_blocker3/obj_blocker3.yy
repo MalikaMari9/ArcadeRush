@@ -4,7 +4,9 @@
   "eventList":[],
   "managed":true,
   "name":"obj_blocker3",
-  "overriddenProperties":[],
+  "overriddenProperties":[
+    {"$GMOverriddenProperty":"v1","%Name":"","name":"","objectId":{"name":"par_blocker","path":"objects/par_blocker/par_blocker.yy",},"propertyId":{"name":"lane_occupy","path":"objects/par_blocker/par_blocker.yy",},"resourceType":"GMOverriddenProperty","resourceVersion":"2.0","value":"2",},
+  ],
   "parent":{
     "name":"Objects",
     "path":"folders/Objects.yy",
@@ -31,8 +33,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"Spr_obs3",
-    "path":"sprites/Spr_obs3/Spr_obs3.yy",
+    "name":"spr_obstacle_3",
+    "path":"sprites/spr_obstacle_3/spr_obstacle_3.yy",
   },
   "spriteMaskId":null,
   "visible":true,

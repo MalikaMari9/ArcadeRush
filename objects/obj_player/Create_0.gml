@@ -20,4 +20,5 @@ invulnerability_timer = 0;
 invulnerability_duration = 1.75;
 invulnerability_blink_interval = 0.1;
 invulnerability_blink_timer = 0;
+phase_through_obstacles = false;
 image_alpha = 1;

@@ -4,6 +4,7 @@ var run_controller = instance_find(obj_controller, 0);
 if (
     !ufo_captured
     && !scalper_captured
+    && !phase_through_obstacles
     && run_controller != noone
     && run_controller.world_scroll_delta > 0
     && place_meeting(x, y, par_scrolling_blocker)

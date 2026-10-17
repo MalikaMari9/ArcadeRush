@@ -8,6 +8,10 @@ image_speed = scalper_base_animation_fps / scalper_native_animation_fps;
 scalper_rest_x = x;
 scalper_rest_y = y - 100;
 scalper_rest_angle = image_angle;
+
+// The crowd is a foreground boundary. Keep it in front of scrolling
+// obstacles regardless of their feet-based dynamic depth.
+depth = -100000;
 var scalper_horizontal_extent = max(
     sprite_get_xoffset(sprite_index),
     sprite_get_width(sprite_index) - sprite_get_xoffset(sprite_index)

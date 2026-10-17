@@ -17,7 +17,12 @@ if (move_y > 0)
     {
         var player_hit = instance_place(x, y + move_step, obj_player);
 
-        if (player_hit != noone && !player_hit.ufo_captured)
+        if (
+            player_hit != noone
+            && !player_hit.ufo_captured
+            && !player_hit.scalper_captured
+            && !player_hit.phase_through_obstacles
+        )
         {
             var player_bottom_offset = player_hit.bbox_bottom - player_hit.y;
             var player_maximum_y = (room_height - 1) - player_bottom_offset;

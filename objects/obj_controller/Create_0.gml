@@ -11,11 +11,16 @@ distance_travelled = 0;
 blocker_spawn_timer = 1;
 blocker_spawn_interval_min = 2.5;
 blocker_spawn_interval_max = 4;
-blocker_spawn_attempts = 8;
 blocker_spawn_buffer = 64;
+blocker_previous_lane_start = -1;
+
+// Four measured lanes between the margins.
+blocker_lane_left = 124;
+blocker_lane_width = 208;
+blocker_lane_count = 4;
 
 // Temporary hazard testing switches.
-debug_spawn_blockers = false;
+debug_spawn_blockers = true;
 debug_manual_lockon = true;
 debug_world_speed_step = 30;
 debug_world_speed_min = 30;
