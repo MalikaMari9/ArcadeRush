@@ -114,6 +114,7 @@ switch (ufo_state)
         if (
             caught != noone
             && !caught.ufo_captured
+            && !caught.scalper_captured
             && !caught.invulnerable
         )
         {

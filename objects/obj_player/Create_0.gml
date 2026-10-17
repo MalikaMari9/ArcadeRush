@@ -12,6 +12,7 @@ player_refresh_appearance(true);
 // Set by hazards that temporarily take control of the player.
 ufo_captured = false;
 ufo_captor = noone;
+scalper_captured = false;
 
 // Shared protection used after hazards return control to the player.
 invulnerable = false;

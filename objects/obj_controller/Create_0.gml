@@ -17,6 +17,8 @@ blocker_spawn_buffer = 64;
 // Temporary hazard testing switches.
 debug_spawn_blockers = false;
 debug_manual_lockon = true;
+debug_world_speed_step = 30;
+debug_world_speed_min = 30;
 
 // Current control-area edges created by the side margins in rm_gameRoom.
 blocker_spawn_left = 128;

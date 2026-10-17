@@ -3,6 +3,7 @@ var run_controller = instance_find(obj_controller, 0);
 
 if (
     !ufo_captured
+    && !scalper_captured
     && run_controller != noone
     && run_controller.world_scroll_delta > 0
     && place_meeting(x, y, par_scrolling_blocker)
@@ -31,5 +32,15 @@ if (
         y = next_y;
     }
 }
-// Sort by the player's feet so tall obstacle artwork can draw in front.
-depth = -bbox_bottom;
+
+// During the bite, draw the player behind the crowd. Otherwise retain the
+// normal feet-based sorting used by obstacles.
+var drawing_scalpers = instance_find(obj_scalpers, 0);
+if (scalper_captured && drawing_scalpers != noone)
+{
+    depth = drawing_scalpers.depth + 1;
+}
+else
+{
+    depth = -bbox_bottom;
+}

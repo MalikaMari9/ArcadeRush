@@ -6,6 +6,23 @@ world_scroll_speed = min(
     world_scroll_speed_max
 );
 
+// Temporary speed testing: K increases and J decreases the
+// shared world speed in visible 30-pixel-per-second steps.
+if (keyboard_check_pressed(ord("K")))
+{
+    world_scroll_speed = min(
+        world_scroll_speed + debug_world_speed_step,
+        world_scroll_speed_max
+    );
+}
+else if (keyboard_check_pressed(ord("J")))
+{
+    world_scroll_speed = max(
+        world_scroll_speed - debug_world_speed_step,
+        debug_world_speed_min
+    );
+}
+
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
@@ -52,12 +69,12 @@ if (debug_spawn_blockers && blocker_spawn_timer <= 0)
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
 
-// Temporary manual test callers: K = Key Pusher, U = UFO Catcher.
+// Temporary manual test callers: P = Key Pusher, U = UFO Catcher.
 if (debug_manual_lockon)
 {
     if (lockon_is_clear)
     {
-        if (keyboard_check_pressed(ord("K")))
+        if (keyboard_check_pressed(ord("P")))
         {
             instance_create_layer(0, 0, "Instances", obj_key_pusher);
         }

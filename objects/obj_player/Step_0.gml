@@ -48,6 +48,13 @@ if (ufo_captured && !instance_exists(ufo_captor))
     ufo_captor = noone;
     player_start_hazard_invulnerability();
 }
+
+// Fail safe: never leave movement locked if the permanent crowd disappears.
+if (scalper_captured && !instance_exists(obj_scalpers))
+{
+    scalper_captured = false;
+    player_start_hazard_invulnerability();
+}
 // Blink while protected, then always restore full opacity.
 if (invulnerable)
 {
@@ -76,6 +83,14 @@ if (ufo_captured)
 {
     image_speed = 0;
     image_index = 0;
+    exit;
+}
+
+// The Scalpers briefly own the player's position during their bite. Keep the
+// walking animation alive so the world still feels in motion.
+if (scalper_captured)
+{
+    image_speed = 1;
     exit;
 }
 

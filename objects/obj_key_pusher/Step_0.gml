@@ -89,6 +89,7 @@ switch (key_state)
                 if (
                     hit_player != noone
                     && !hit_player.ufo_captured
+                    && !hit_player.scalper_captured
                     && !hit_player.invulnerable
                 )
                 {
