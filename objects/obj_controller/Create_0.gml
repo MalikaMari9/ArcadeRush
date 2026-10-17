@@ -7,12 +7,20 @@ world_scroll_speed_max = 300;
 world_scroll_delta = 0;
 distance_travelled = 0;
 
-// Temporary random blocker-spawn settings for the movement prototype.
-blocker_spawn_timer = 1;
-blocker_spawn_interval_min = 2.5;
-blocker_spawn_interval_max = 4;
+// Four-row procedural blocker generation. Row timing is derived from world
+// distance so obstacle density remains stable as scrolling accelerates.
+blocker_generation_enabled = true;
+blocker_spawn_timer = 0.85;
 blocker_spawn_buffer = 64;
-blocker_previous_lane_start = -1;
+blocker_row_spacing_min = 410;
+blocker_row_spacing_max = 520;
+blocker_patterns = scr_blocker_pattern_data();
+blocker_pattern_row = 0;
+blocker_current_pattern_id = -1;
+blocker_recent_pattern_ids = [];
+blocker_mirror_current_pattern = false;
+blocker_reverse_current_pattern = false;
+blocker_hazard_breathers = true;
 
 // Four measured lanes between the margins.
 blocker_lane_left = 124;
@@ -20,7 +28,6 @@ blocker_lane_width = 208;
 blocker_lane_count = 4;
 
 // Temporary hazard testing switches.
-debug_spawn_blockers = true;
 debug_manual_lockon = true;
 debug_world_speed_step = 30;
 debug_world_speed_min = 30;

@@ -26,63 +26,113 @@ else if (keyboard_check_pressed(ord("J")))
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
-blocker_spawn_timer -= delta_seconds;
-
-if (debug_spawn_blockers && blocker_spawn_timer <= 0)
+if (blocker_generation_enabled)
 {
-    var blocker_object = choose(obj_blocker1, obj_blocker2, obj_blocker3);
-    var blocker_sprite = object_get_sprite(blocker_object);
-    var blocker_width = sprite_get_width(blocker_sprite);
-    var blocker_height = sprite_get_height(blocker_sprite);
+    blocker_spawn_timer -= delta_seconds;
 
-    // Create above the room first so the inherited lane_occupy property can
-    // determine placement. Sprite width is a safe fallback while an object
-    // property edit is still unsaved in the IDE.
-    var spawned_blocker = instance_create_layer(
-        0,
-        -blocker_height - blocker_spawn_buffer,
-        "Obstacles",
-        blocker_object
-    );
-
-    if (spawned_blocker != noone)
+    if (blocker_spawn_timer <= 0)
     {
-        var property_lane_span = round(spawned_blocker.lane_occupy);
-        var width_lane_span = round(blocker_width / blocker_lane_width);
-        var lane_span = clamp(
-            max(property_lane_span, width_lane_span),
-            1,
-            blocker_lane_count
-        );
-        spawned_blocker.lane_occupy = lane_span;
+        var blocker_difficulty = clamp(distance_travelled / 14000, 0, 1);
 
-        var maximum_lane_start = blocker_lane_count - lane_span;
-        var lane_start = irandom(maximum_lane_start);
-
-        // Avoid repeating the exact same starting lane when another valid
-        // position exists, while keeping the result random.
-        if (maximum_lane_start > 0 && lane_start == blocker_previous_lane_start)
+        // Select a new four-row formation after the previous one completes.
+        if (blocker_pattern_row == 0)
         {
-            lane_start = (lane_start + irandom_range(1, maximum_lane_start))
-                mod (maximum_lane_start + 1);
+            blocker_current_pattern_id = scr_blocker_pick_pattern(
+                blocker_patterns,
+                blocker_difficulty,
+                blocker_recent_pattern_ids
+            );
+            blocker_mirror_current_pattern = (irandom(1) == 1);
+            blocker_reverse_current_pattern = (irandom(1) == 1);
         }
 
-        var lane_center = blocker_lane_left
-            + (lane_start + lane_span * 0.5) * blocker_lane_width;
-        var blocker_bottom_from_origin = blocker_height
-            - sprite_get_yoffset(blocker_sprite);
+        var blocker_pattern = blocker_patterns[blocker_current_pattern_id];
+        var blocker_row_index = blocker_pattern_row;
+        if (blocker_reverse_current_pattern)
+        {
+            blocker_row_index = 3 - blocker_row_index;
+        }
 
-        spawned_blocker.x = lane_center;
-        spawned_blocker.y = -blocker_bottom_from_origin
-            - blocker_spawn_buffer;
-        blocker_previous_lane_start = lane_start;
+        var blocker_row_mask = blocker_pattern.rows[blocker_row_index];
+
+        // Mutate occasional single rows without changing their safe footprint.
+        if (
+            blocker_row_mask == 1
+            || blocker_row_mask == 2
+            || blocker_row_mask == 4
+            || blocker_row_mask == 8
+        )
+        {
+            var blocker_mutation_chance = lerp(
+                0.14,
+                0.28,
+                blocker_difficulty
+            );
+            if (random(1) < blocker_mutation_chance)
+            {
+                blocker_row_mask = choose(1, 2, 4, 8);
+            }
+        }
+
+        // Hard lock-on attacks receive an empty row so their telegraphs remain
+        // readable and the player is not forced through two threats at once.
+        var blocker_lockon_active = instance_exists(obj_ufo_catcher)
+            || instance_exists(obj_key_pusher);
+        if (blocker_hazard_breathers && blocker_lockon_active)
+        {
+            blocker_row_mask = 0;
+        }
+        else
+        {
+            var blocker_breather_chance = lerp(
+                0.12,
+                0.045,
+                blocker_difficulty
+            );
+            if (random(1) < blocker_breather_chance)
+            {
+                blocker_row_mask = 0;
+            }
+        }
+
+        if (blocker_mirror_current_pattern)
+        {
+            blocker_row_mask = scr_blocker_mirror_mask(blocker_row_mask);
+        }
+
+        scr_blocker_spawn_mask(blocker_row_mask, id);
+
+        blocker_pattern_row += 1;
+        if (blocker_pattern_row >= 4)
+        {
+            array_push(
+                blocker_recent_pattern_ids,
+                blocker_current_pattern_id
+            );
+            if (array_length(blocker_recent_pattern_ids) > 5)
+            {
+                array_delete(blocker_recent_pattern_ids, 0, 1);
+            }
+
+            blocker_pattern_row = 0;
+            blocker_current_pattern_id = -1;
+        }
+
+        var blocker_spacing = lerp(
+            blocker_row_spacing_max,
+            blocker_row_spacing_min,
+            blocker_difficulty
+        );
+        var blocker_spacing_variation = random_range(0.92, 1.08);
+        blocker_spawn_timer = max(
+            0.65,
+            blocker_spacing
+                / max(world_scroll_speed, 1)
+                * blocker_spacing_variation
+        );
     }
-
-    blocker_spawn_timer = random_range(
-        blocker_spawn_interval_min,
-        blocker_spawn_interval_max
-    );
 }
+
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
 

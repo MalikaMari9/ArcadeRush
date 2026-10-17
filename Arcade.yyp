@@ -52,6 +52,7 @@
     {"id":{"name":"par_scrolling_blocker","path":"objects/par_scrolling_blocker/par_scrolling_blocker.yy",},},
     {"id":{"name":"rm_gameRoom","path":"rooms/rm_gameRoom/rm_gameRoom.yy",},},
     {"id":{"name":"rm_gameStart","path":"rooms/rm_gameStart/rm_gameStart.yy",},},
+    {"id":{"name":"scr_blocker_patterns","path":"scripts/scr_blocker_patterns/scr_blocker_patterns.yy",},},
     {"id":{"name":"scr_game_time","path":"scripts/scr_game_time/scr_game_time.yy",},},
     {"id":{"name":"scr_hazard_states","path":"scripts/scr_hazard_states/scr_hazard_states.yy",},},
     {"id":{"name":"scr_player_protection","path":"scripts/scr_player_protection/scr_player_protection.yy",},},
