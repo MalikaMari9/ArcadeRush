@@ -6,142 +6,58 @@ world_scroll_speed = min(
     world_scroll_speed_max
 );
 
-// Temporary speed testing: K increases and J decreases the
-// shared world speed in visible 30-pixel-per-second steps.
-if (keyboard_check_pressed(ord("K")))
-{
-    world_scroll_speed = min(
-        world_scroll_speed + debug_world_speed_step,
-        world_scroll_speed_max
-    );
-}
-else if (keyboard_check_pressed(ord("J")))
-{
-    world_scroll_speed = max(
-        world_scroll_speed - debug_world_speed_step,
-        debug_world_speed_min
-    );
-}
-
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
-if (blocker_generation_enabled)
+blocker_spawn_timer -= delta_seconds;
+
+if (debug_spawn_blockers && blocker_spawn_timer <= 0)
 {
-    blocker_spawn_timer -= delta_seconds;
+    var blocker_object = choose(obj_blocker1, obj_blocker2, obj_blocker3);
+    var blocker_sprite = object_get_sprite(blocker_object);
+    var blocker_width = sprite_get_width(blocker_sprite);
+    var blocker_height = sprite_get_height(blocker_sprite);
 
-    if (blocker_spawn_timer <= 0)
+    var spawn_x_min = blocker_spawn_left;
+    var spawn_x_max = blocker_spawn_right - blocker_width;
+    var spawn_y = -blocker_height - blocker_spawn_buffer;
+
+    if (spawn_x_max >= spawn_x_min)
     {
-        var blocker_difficulty = clamp(distance_travelled / 14000, 0, 1);
-
-        // Select a new four-row formation after the previous one completes.
-        if (blocker_pattern_row == 0)
+        repeat (blocker_spawn_attempts)
         {
-            blocker_current_pattern_id = scr_blocker_pick_pattern(
-                blocker_patterns,
-                blocker_difficulty,
-                blocker_recent_pattern_ids
-            );
-            blocker_mirror_current_pattern = (irandom(1) == 1);
-            blocker_reverse_current_pattern = (irandom(1) == 1);
-        }
+            var spawn_x = irandom_range(spawn_x_min, spawn_x_max);
 
-        var blocker_pattern = blocker_patterns[blocker_current_pattern_id];
-        var blocker_row_index = blocker_pattern_row;
-        if (blocker_reverse_current_pattern)
-        {
-            blocker_row_index = 3 - blocker_row_index;
-        }
-
-        var blocker_row_mask = blocker_pattern.rows[blocker_row_index];
-
-        // Mutate occasional single rows without changing their safe footprint.
-        if (
-            blocker_row_mask == 1
-            || blocker_row_mask == 2
-            || blocker_row_mask == 4
-            || blocker_row_mask == 8
-        )
-        {
-            var blocker_mutation_chance = lerp(
-                0.14,
-                0.28,
-                blocker_difficulty
-            );
-            if (random(1) < blocker_mutation_chance)
+            if (collision_rectangle(
+                spawn_x,
+                spawn_y,
+                spawn_x + blocker_width - 1,
+                spawn_y + blocker_height - 1,
+                par_scrolling_blocker,
+                false,
+                true
+            ) == noone)
             {
-                blocker_row_mask = choose(1, 2, 4, 8);
+                instance_create_layer(spawn_x, spawn_y, "Instances", blocker_object);
+                break;
             }
         }
-
-        // Hard lock-on attacks receive an empty row so their telegraphs remain
-        // readable and the player is not forced through two threats at once.
-        var blocker_lockon_active = instance_exists(obj_ufo_catcher)
-            || instance_exists(obj_key_pusher);
-        if (blocker_hazard_breathers && blocker_lockon_active)
-        {
-            blocker_row_mask = 0;
-        }
-        else
-        {
-            var blocker_breather_chance = lerp(
-                0.12,
-                0.045,
-                blocker_difficulty
-            );
-            if (random(1) < blocker_breather_chance)
-            {
-                blocker_row_mask = 0;
-            }
-        }
-
-        if (blocker_mirror_current_pattern)
-        {
-            blocker_row_mask = scr_blocker_mirror_mask(blocker_row_mask);
-        }
-
-        scr_blocker_spawn_mask(blocker_row_mask, id);
-
-        blocker_pattern_row += 1;
-        if (blocker_pattern_row >= 4)
-        {
-            array_push(
-                blocker_recent_pattern_ids,
-                blocker_current_pattern_id
-            );
-            if (array_length(blocker_recent_pattern_ids) > 5)
-            {
-                array_delete(blocker_recent_pattern_ids, 0, 1);
-            }
-
-            blocker_pattern_row = 0;
-            blocker_current_pattern_id = -1;
-        }
-
-        var blocker_spacing = lerp(
-            blocker_row_spacing_max,
-            blocker_row_spacing_min,
-            blocker_difficulty
-        );
-        var blocker_spacing_variation = random_range(0.92, 1.08);
-        blocker_spawn_timer = max(
-            0.65,
-            blocker_spacing
-                / max(world_scroll_speed, 1)
-                * blocker_spacing_variation
-        );
     }
-}
 
+    blocker_spawn_timer = random_range(
+        blocker_spawn_interval_min,
+        blocker_spawn_interval_max
+    );
+}
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
 
-// Temporary manual test callers: P = Key Pusher, U = UFO Catcher.
+// Temporary manual test callers: K = Key Pusher, U = UFO Catcher.
 if (debug_manual_lockon)
 {
     if (lockon_is_clear)
     {
-        if (keyboard_check_pressed(ord("P")))
+        if (keyboard_check_pressed(ord("K")))
         {
             instance_create_layer(0, 0, "Instances", obj_key_pusher);
         }
@@ -165,4 +81,61 @@ else if (lockon_is_clear)
             lockon_cooldown_max
         );
     }
+}
+
+// C forces the next coin tower for testing; otherwise it arrives occasionally.
+coin_spawn_timer -= delta_seconds;
+var coin_spawn_due = keyboard_check_pressed(ord("C"))
+    || coin_spawn_timer <= 0;
+
+if (
+    coin_spawn_due
+    && !instance_exists(obj_coin)
+    && (
+        !instance_exists(obj_walking_duck)
+        || keyboard_check_pressed(ord("C"))
+    )
+)
+{
+    var coin_lane = irandom(blocker_lane_count - 1);
+    var coin_x = blocker_lane_left
+        + (coin_lane + 0.5) * blocker_lane_width;
+    var coin_y = -coin_spawn_buffer;
+
+    // Keep the arrival clear of obstacles already entering from above.
+    if (collision_rectangle(
+        coin_x - blocker_lane_width * 0.5,
+        coin_y - sprite_get_height(spr_coins),
+        coin_x + blocker_lane_width * 0.5,
+        coin_y + blocker_lane_width,
+        par_scrolling_blocker,
+        false,
+        true
+    ) == noone)
+    {
+        instance_create_layer(coin_x, coin_y, "Obstacles", obj_coin);
+        coin_spawn_timer = random_range(
+            coin_spawn_cooldown_min,
+            coin_spawn_cooldown_max
+        );
+    }
+}
+
+// H forces a duck for testing; automatic encounters wait for other hazards.
+duck_spawn_timer -= delta_seconds;
+var duck_manual_spawn = keyboard_check_pressed(ord("H"));
+var duck_auto_clear = !instance_exists(obj_coin)
+    && !instance_exists(obj_ufo_catcher)
+    && !instance_exists(obj_key_pusher);
+
+if (
+    !instance_exists(obj_walking_duck)
+    && (duck_manual_spawn || (duck_spawn_timer <= 0 && duck_auto_clear))
+)
+{
+    instance_create_layer(0, 0, "Instances", obj_walking_duck);
+    duck_spawn_timer = random_range(
+        duck_spawn_cooldown_min,
+        duck_spawn_cooldown_max
+    );
 }

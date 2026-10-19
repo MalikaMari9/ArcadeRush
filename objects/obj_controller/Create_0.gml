@@ -31,6 +31,10 @@ blocker_lane_count = 4;
 debug_manual_lockon = true;
 debug_world_speed_step = 30;
 debug_world_speed_min = 30;
+debug_spawn_blockers = false;
+blocker_spawn_attempts = 8;
+blocker_spawn_interval_min = 1.4;
+blocker_spawn_interval_max = 2.2;
 
 // Current control-area edges created by the side margins in rm_gameRoom.
 blocker_spawn_left = 128;
@@ -40,5 +44,16 @@ blocker_spawn_right = 960;
 lockon_spawn_timer = 3;
 lockon_cooldown_min = 10;
 lockon_cooldown_max = 20;
+
+// Autonomous coin tower: at most one active tower at a time.
+coin_spawn_timer = 5;
+coin_spawn_cooldown_min = 11;
+coin_spawn_cooldown_max = 17;
+coin_spawn_buffer = 64;
+
+// Screen-fixed walking duck encounter.
+duck_spawn_timer = 9;
+duck_spawn_cooldown_min = 17;
+duck_spawn_cooldown_max = 24;
 
 randomise();
