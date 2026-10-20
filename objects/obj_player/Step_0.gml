@@ -114,17 +114,7 @@ if (keyboard_check_pressed(ord("3"))) player_lives = 3;
 if (keyboard_check_pressed(ord("2"))) player_lives = 2;
 if (keyboard_check_pressed(ord("1"))) player_lives = 1;
 
-// Vertical input selects front/back. Pure horizontal movement keeps the
-// last vertical facing, while horizontal input mirrors the artwork.
-if (input_y > 0)
-{
-    player_vertical_facing = 1;
-}
-else if (input_y < 0)
-{
-    player_vertical_facing = -1;
-}
-
+// Horizontal input mirrors the back-facing artwork.
 if (input_x != 0)
 {
     player_horizontal_facing = sign(input_x);

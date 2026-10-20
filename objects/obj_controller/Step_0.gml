@@ -9,6 +9,85 @@ world_scroll_speed = min(
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
+// Spawn collectible ticket strips in random lanes. Higher denominations and
+// longer strips are intentionally less common.
+ticket_spawn_timer -= delta_seconds;
+
+if (ticket_spawn_timer <= 0 && instance_number(par_ticket) < ticket_active_max)
+{
+    var segment_roll = irandom(99);
+    var segment_count = 1;
+
+    if (segment_roll >= 85)
+    {
+        segment_count = 3;
+    }
+    else if (segment_roll >= 55)
+    {
+        segment_count = 2;
+    }
+
+    var ticket_lane = irandom(blocker_lane_count - 1);
+    var ticket_x = blocker_lane_left
+        + (ticket_lane + 0.5) * blocker_lane_width;
+    // All ticket sprites currently share these dimensions and origins.
+    var ticket_sprite = object_get_sprite(obj_ticket_1);
+    var ticket_height = sprite_get_height(ticket_sprite);
+    var ticket_origin_y = sprite_get_yoffset(ticket_sprite);
+    var ticket_spacing = 123;
+    var strip_height = ticket_height
+        + (segment_count - 1) * ticket_spacing;
+    var ticket_y = -ticket_spawn_buffer
+        - (ticket_height - ticket_origin_y)
+        - (segment_count - 1) * ticket_spacing;
+    var lane_left = blocker_lane_left
+        + ticket_lane * blocker_lane_width;
+    var lane_right = lane_left + blocker_lane_width;
+
+    // Delay briefly if an obstacle is already entering through this lane.
+    if (collision_rectangle(
+        lane_left,
+        ticket_y - ticket_origin_y,
+        lane_right,
+        strip_height,
+        par_scrolling_blocker,
+        false,
+        true
+    ) == noone)
+    {
+        for (var segment = 0; segment < segment_count; segment++)
+        {
+            var ticket_roll = irandom(99);
+            var ticket_object = obj_ticket_1;
+
+            if (ticket_roll >= 90)
+            {
+                ticket_object = obj_ticket_5;
+            }
+            else if (ticket_roll >= 60)
+            {
+                ticket_object = obj_ticket_2;
+            }
+
+            instance_create_layer(
+                ticket_x,
+                ticket_y + segment * ticket_spacing,
+                "Tickets",
+                ticket_object
+            );
+        }
+
+        ticket_spawn_timer = random_range(
+            ticket_spawn_cooldown_min,
+            ticket_spawn_cooldown_max
+        );
+    }
+    else
+    {
+        ticket_spawn_timer = ticket_spawn_retry;
+    }
+}
+
 blocker_spawn_timer -= delta_seconds;
 
 if (debug_spawn_blockers && blocker_spawn_timer <= 0)

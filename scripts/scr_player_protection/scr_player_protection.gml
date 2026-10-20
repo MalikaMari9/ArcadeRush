@@ -1,15 +1,5 @@
-function player_get_protection_sprite(_lives, _vertical_facing)
+function player_get_protection_sprite(_lives)
 {
-    if (_vertical_facing == 1)
-    {
-        switch (_lives)
-        {
-            case 3: return spr_cat_front_bag;
-            case 2: return spr_cat_front_tag;
-            default: return spr_cat_front_body;
-        }
-    }
-
     switch (_lives)
     {
         case 3: return spr_cat_back_bag;
@@ -22,10 +12,7 @@ function player_get_protection_sprite(_lives, _vertical_facing)
 function player_refresh_appearance(_reset_frame = false)
 {
     var retained_frame = _reset_frame ? 0 : image_index;
-    var desired_sprite = player_get_protection_sprite(
-        player_lives,
-        player_vertical_facing
-    );
+    var desired_sprite = player_get_protection_sprite(player_lives);
 
     if (sprite_index != desired_sprite)
     {

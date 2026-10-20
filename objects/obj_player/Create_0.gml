@@ -4,8 +4,7 @@ move_speed = 500;
 // Temporary protection/life state. Damage behavior will be added later.
 player_lives = 3;
 
-// Remember facing while an input axis is idle.
-player_vertical_facing = 1;
+// The runner always faces forward into the scrolling arcade.
 player_horizontal_facing = 1;
 player_refresh_appearance(true);
 

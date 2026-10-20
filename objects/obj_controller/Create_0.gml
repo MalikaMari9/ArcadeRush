@@ -7,6 +7,21 @@ world_scroll_speed_max = 300;
 world_scroll_delta = 0;
 distance_travelled = 0;
 
+// Placeholder run counters. Distance is stored in world pixels and converted
+// only for display so gameplay systems retain the precise progress value.
+distance_pixels_per_metre = 100;
+score_per_metre = 10;
+run_tickets = 0;
+
+// Lightweight collectible-ticket scheduler. Ticket patterns and effects can
+// replace this later without changing the shared ticket objects.
+ticket_spawn_timer = 3;
+ticket_spawn_cooldown_min = 4;
+ticket_spawn_cooldown_max = 7;
+ticket_spawn_retry = 0.75;
+ticket_spawn_buffer = 24;
+ticket_active_max = 8;
+
 // Four-row procedural blocker generation. Row timing is derived from world
 // distance so obstacle density remains stable as scrolling accelerates.
 blocker_generation_enabled = true;
