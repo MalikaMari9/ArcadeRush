@@ -147,6 +147,10 @@ function scr_blocker_mirror_mask(_mask)
         case 8: return 1;
         case 3: return 12;
         case 12: return 3;
+        case 7: return 14;
+        case 14: return 7;
+        case 11: return 13;
+        case 13: return 11;
     }
 
     return _mask;
@@ -157,11 +161,12 @@ function scr_blocker_pick_one_lane_object()
     return choose(obj_blocker1, obj_blocker2);
 }
 
-function scr_blocker_spawn_in_lanes(
+function scr_blocker_spawn_in_lanes_offset(
     _object,
     _lane_start,
     _lane_span,
-    _controller
+    _controller,
+    _x_offset
 )
 {
     var blocker_sprite = object_get_sprite(_object);
@@ -175,7 +180,8 @@ function scr_blocker_spawn_in_lanes(
         - sprite_get_yoffset(blocker_sprite);
     var spawn_x = _controller.blocker_lane_left
         + (_lane_start + _lane_span * 0.5)
-            * _controller.blocker_lane_width;
+            * _controller.blocker_lane_width
+        + _x_offset;
     var spawn_y = -blocker_bottom_from_origin
         - _controller.blocker_spawn_buffer;
     var spawned_blocker = instance_create_layer(
@@ -195,8 +201,200 @@ function scr_blocker_spawn_in_lanes(
     return spawned_blocker;
 }
 
+function scr_blocker_spawn_in_lanes(
+    _object,
+    _lane_start,
+    _lane_span,
+    _controller
+)
+{
+    return scr_blocker_spawn_in_lanes_offset(
+        _object,
+        _lane_start,
+        _lane_span,
+        _controller,
+        0
+    );
+}
+
+// Test the real usable width left by a mask. Artwork can extend beyond its
+// nominal lane, so an open lane alone is not proof that the player fits.
+function scr_blocker_mask_has_escape(_mask, _controller)
+{
+    if (_mask == 0) return true;
+    if (_mask < 0 || _mask >= 15) return false;
+
+    // Use the widest protection-state mask so taking damage never changes
+    // which blocker formations the generator considers safe.
+    var player_width = max(
+        sprite_get_bbox_right(spr_cat_back_bag)
+            - sprite_get_bbox_left(spr_cat_back_bag) + 1,
+        sprite_get_bbox_right(spr_cat_back_tag)
+            - sprite_get_bbox_left(spr_cat_back_tag) + 1,
+        sprite_get_bbox_right(spr_cat_back_body)
+            - sprite_get_bbox_left(spr_cat_back_body) + 1
+    );
+
+    var required_width = player_width + 12;
+    var lane_width = _controller.blocker_lane_width;
+    var best_corridor = 0;
+    var run_start = -1;
+    var run_length = 0;
+
+    for (var lane = 0; lane <= _controller.blocker_lane_count; lane++)
+    {
+        var lane_is_open = false;
+        if (lane < _controller.blocker_lane_count)
+        {
+            var lane_bit = power(2, lane);
+            lane_is_open = (floor(_mask / lane_bit) mod 2) == 0;
+        }
+
+        if (lane_is_open)
+        {
+            if (run_start < 0) run_start = lane;
+            run_length++;
+        }
+        else if (run_length > 0)
+        {
+            var corridor_width = run_length * lane_width;
+            var left_bleed = (run_start > 0) ? 4 : 0;
+            var right_bleed = (lane < _controller.blocker_lane_count) ? 4 : 0;
+
+            if (_mask == 7 && run_start == 3) left_bleed = 12;
+            if (_mask == 14 && run_start == 0) right_bleed = 12;
+
+            corridor_width -= left_bleed + right_bleed;
+            best_corridor = max(best_corridor, corridor_width);
+            run_start = -1;
+            run_length = 0;
+        }
+    }
+
+    return best_corridor >= required_width;
+}
+
+// Close rows must retain a common open lane. A longer transition gap may allow
+// one lane of movement before the next row reaches the player.
+function scr_blocker_masks_connected(
+    _previous_mask,
+    _next_mask,
+    _controller,
+    _allow_lane_shift
+)
+{
+    if (_previous_mask == 0 || _next_mask == 0) return true;
+
+    var previous_open = [];
+    var next_open = [];
+    for (var lane = 0; lane < _controller.blocker_lane_count; lane++)
+    {
+        var lane_bit = power(2, lane);
+        if ((floor(_previous_mask / lane_bit) mod 2) == 0)
+            array_push(previous_open, lane);
+        if ((floor(_next_mask / lane_bit) mod 2) == 0)
+            array_push(next_open, lane);
+    }
+
+    for (var previous_index = 0;
+        previous_index < array_length(previous_open);
+        previous_index++)
+    {
+        for (var next_index = 0;
+            next_index < array_length(next_open);
+            next_index++)
+        {
+            var lane_difference = abs(
+                previous_open[previous_index] - next_open[next_index]
+            );
+            if (
+                lane_difference == 0
+                || (_allow_lane_shift && lane_difference <= 1)
+            ) return true;
+        }
+    }
+
+    return false;
+}
+
+function scr_blocker_pick_connected_mask(
+    _previous_mask,
+    _difficulty,
+    _controller,
+    _allow_lane_shift
+)
+{
+    var singles = [1, 2, 4, 8];
+    var doubles = [3, 6, 12, 9];
+    var triples = [7, 11, 13, 14];
+    var roll = random(1);
+    var preferred = singles;
+
+    if (_difficulty < 0.30)
+    {
+        if (roll < 0.08) preferred = triples;
+        else if (roll < 0.42) preferred = doubles;
+    }
+    else if (_difficulty < 0.70)
+    {
+        if (roll < 0.17) preferred = triples;
+        else if (roll < 0.62) preferred = doubles;
+    }
+    else
+    {
+        if (roll < 0.28) preferred = triples;
+        else if (roll < 0.76) preferred = doubles;
+    }
+
+    var candidates = [];
+    for (var preferred_index = 0;
+        preferred_index < array_length(preferred);
+        preferred_index++)
+    {
+        var preferred_mask = preferred[preferred_index];
+        if (
+            preferred_mask != _previous_mask
+            && scr_blocker_mask_has_escape(preferred_mask, _controller)
+            && scr_blocker_masks_connected(
+                _previous_mask,
+                preferred_mask,
+                _controller,
+                _allow_lane_shift
+            )
+        ) array_push(candidates, preferred_mask);
+    }
+
+    if (array_length(candidates) == 0)
+    {
+        var all_masks = [1, 2, 4, 8, 3, 6, 12, 9, 7, 11, 13, 14];
+        for (var fallback_index = 0;
+            fallback_index < array_length(all_masks);
+            fallback_index++)
+        {
+            var fallback_mask = all_masks[fallback_index];
+            if (
+                scr_blocker_mask_has_escape(fallback_mask, _controller)
+                && scr_blocker_masks_connected(
+                    _previous_mask,
+                    fallback_mask,
+                    _controller,
+                    _allow_lane_shift
+                )
+            ) array_push(candidates, fallback_mask);
+        }
+    }
+
+    if (array_length(candidates) == 0) return 0;
+    return candidates[irandom(array_length(candidates) - 1)];
+}
+
 function scr_blocker_spawn_mask(_mask, _controller)
 {
+    if (_mask != 0 && !scr_blocker_mask_has_escape(_mask, _controller))
+    {
+        _mask = choose(1, 2, 4, 8);
+    }
+
     switch (_mask)
     {
         case 0:
@@ -246,6 +444,34 @@ function scr_blocker_spawn_mask(_mask, _controller)
             scr_blocker_spawn_in_lanes(
                 scr_blocker_pick_one_lane_object(), 3, 1, _controller
             );
+            return;
+
+        case 7:
+            scr_blocker_spawn_in_lanes(obj_blocker3, 0, 2, _controller);
+            scr_blocker_spawn_in_lanes_offset(
+                scr_blocker_pick_one_lane_object(), 2, 1, _controller, 8
+            );
+            return;
+
+        case 11:
+            scr_blocker_spawn_in_lanes(obj_blocker3, 0, 2, _controller);
+            scr_blocker_spawn_in_lanes(
+                scr_blocker_pick_one_lane_object(), 3, 1, _controller
+            );
+            return;
+
+        case 13:
+            scr_blocker_spawn_in_lanes(
+                scr_blocker_pick_one_lane_object(), 0, 1, _controller
+            );
+            scr_blocker_spawn_in_lanes(obj_blocker3, 2, 2, _controller);
+            return;
+
+        case 14:
+            scr_blocker_spawn_in_lanes_offset(
+                scr_blocker_pick_one_lane_object(), 1, 1, _controller, -8
+            );
+            scr_blocker_spawn_in_lanes(obj_blocker3, 2, 2, _controller);
             return;
     }
 

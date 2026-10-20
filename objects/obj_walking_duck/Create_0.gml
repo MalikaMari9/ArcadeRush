@@ -35,4 +35,6 @@ x = (duck_entry_side == -1)
     : room_width + duck_half_width;
 // The authored sprite faces left at positive scale.
 image_xscale = (duck_entry_side == -1) ? -1 : 1;
-depth = -y - 1;
+// Keep this screen-fixed encounter above ordinary scrolling obstacles while
+// leaving capture hazards, Scalpers, and the UI in front of it.
+depth = -90000;

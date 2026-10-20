@@ -90,76 +90,207 @@ if (ticket_spawn_timer <= 0 && instance_number(par_ticket) < ticket_active_max)
 
 blocker_spawn_timer -= delta_seconds;
 
-if (debug_spawn_blockers && blocker_spawn_timer <= 0)
-{
-    var blocker_object = choose(obj_blocker1, obj_blocker2, obj_blocker3);
-    var blocker_sprite = object_get_sprite(blocker_object);
-    var blocker_width = sprite_get_width(blocker_sprite);
-    var blocker_height = sprite_get_height(blocker_sprite);
-
-    var spawn_x_min = blocker_spawn_left;
-    var spawn_x_max = blocker_spawn_right - blocker_width;
-    var spawn_y = -blocker_height - blocker_spawn_buffer;
-
-    if (spawn_x_max >= spawn_x_min)
-    {
-        repeat (blocker_spawn_attempts)
-        {
-            var spawn_x = irandom_range(spawn_x_min, spawn_x_max);
-
-            if (collision_rectangle(
-                spawn_x,
-                spawn_y,
-                spawn_x + blocker_width - 1,
-                spawn_y + blocker_height - 1,
-                par_scrolling_blocker,
-                false,
-                true
-            ) == noone)
-            {
-                instance_create_layer(spawn_x, spawn_y, "Instances", blocker_object);
-                break;
-            }
-        }
-    }
-
-    blocker_spawn_timer = random_range(
-        blocker_spawn_interval_min,
-        blocker_spawn_interval_max
-    );
-}
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
+var lockon_support_hazards_clear = !instance_exists(obj_coin)
+    && !instance_exists(obj_walking_duck);
 
-// Temporary manual test callers: K = Key Pusher, U = UFO Catcher.
-if (debug_manual_lockon)
+// U and K remain manual test controls while preserving encounter exclusivity.
+if (
+    lockon_is_clear
+    && lockon_support_hazards_clear
+    && keyboard_check_pressed(ord("U"))
+)
 {
-    if (lockon_is_clear)
-    {
-        if (keyboard_check_pressed(ord("K")))
-        {
-            instance_create_layer(0, 0, "Instances", obj_key_pusher);
-        }
-        else if (keyboard_check_pressed(ord("U")))
-        {
-            instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
-        }
-    }
+    instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
+    lockon_spawn_timer = random_range(
+        lockon_cooldown_min,
+        lockon_cooldown_max
+    );
+    coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
+    duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
 }
-// Normal shared random scheduler, retained for when testing is finished.
-else if (lockon_is_clear)
+else if (
+    lockon_is_clear
+    && lockon_support_hazards_clear
+    && keyboard_check_pressed(ord("K"))
+)
 {
-    lockon_spawn_timer -= delta_seconds;
+    instance_create_layer(0, 0, "Instances", obj_key_pusher);
+    lockon_spawn_timer = random_range(
+        lockon_cooldown_min,
+        lockon_cooldown_max
+    );
+    coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
+    duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
+}
+else if (!debug_manual_lockon && lockon_is_clear)
+{
+    // Let the timer finish behind a coin/duck, then start as soon as they clear.
+    lockon_spawn_timer = max(0, lockon_spawn_timer - delta_seconds);
 
-    if (lockon_spawn_timer <= 0)
+    if (lockon_spawn_timer <= 0 && lockon_support_hazards_clear)
     {
-        var lockon_object = choose(obj_ufo_catcher, obj_key_pusher);
+        var lockon_object = (random(1) < 0.55)
+            ? obj_ufo_catcher
+            : obj_key_pusher;
+        var lockon_player = instance_find(obj_player, 0);
+
+        if (
+            lockon_object == obj_ufo_catcher
+            && !scr_ufo_has_escape_route(lockon_player)
+        ) lockon_object = obj_key_pusher;
+
         instance_create_layer(0, 0, "Instances", lockon_object);
         lockon_spawn_timer = random_range(
             lockon_cooldown_min,
             lockon_cooldown_max
         );
+        coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
+        duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
     }
+}
+
+// Generate route-aware four-row formations. Pattern time pauses while a
+// lock-on hazard owns the playfield.
+var lockon_hazard_active_for_blockers = instance_exists(obj_ufo_catcher)
+    || instance_exists(obj_key_pusher);
+
+if (
+    blocker_generation_enabled
+    && blocker_spawn_timer <= 0
+    && !(blocker_hazard_breathers && lockon_hazard_active_for_blockers)
+)
+{
+    var blocker_difficulty = clamp(distance_travelled / 14000, 0, 1);
+
+    if (blocker_pattern_row == 0)
+    {
+        blocker_current_pattern_id = scr_blocker_pick_pattern(
+            blocker_patterns,
+            blocker_difficulty,
+            blocker_recent_pattern_ids
+        );
+        blocker_mirror_current_pattern = (irandom(1) == 1);
+        blocker_reverse_current_pattern = (irandom(1) == 1);
+    }
+
+    var active_pattern = blocker_patterns[blocker_current_pattern_id];
+    var active_row_index = blocker_reverse_current_pattern
+        ? 3 - blocker_pattern_row
+        : blocker_pattern_row;
+    var blocker_row_mask = active_pattern.rows[active_row_index];
+
+    var blocker_mutation_chance = lerp(0.32, 0.52, blocker_difficulty);
+    if (random(1) < blocker_mutation_chance)
+    {
+        var triple_chance = lerp(0.10, 0.30, blocker_difficulty);
+        blocker_row_mask = (random(1) < triple_chance)
+            ? choose(7, 11, 13, 14)
+            : choose(1, 2, 4, 8, 3, 6, 12, 9);
+    }
+
+    var blocker_breather_chance = lerp(0.075, 0.025, blocker_difficulty);
+    if (blocker_row_mask != 0 && random(1) < blocker_breather_chance)
+    {
+        blocker_row_mask = 0;
+    }
+
+    if (blocker_mirror_current_pattern)
+    {
+        blocker_row_mask = scr_blocker_mirror_mask(blocker_row_mask);
+    }
+
+    var blocker_player = instance_find(obj_player, 0);
+    var blocker_player_height = 260;
+    var blocker_player_speed = 500;
+    if (blocker_player != noone)
+    {
+        blocker_player_height = blocker_player.bbox_bottom
+            - blocker_player.bbox_top + 1;
+        blocker_player_speed = blocker_player.move_speed;
+    }
+
+    var blocker_sprite = object_get_sprite(obj_blocker1);
+    var blocker_sprite_height = sprite_get_height(blocker_sprite);
+    var lane_change_seconds = blocker_lane_width
+        / max(1, blocker_player_speed);
+    var minimum_lane_change_gap = blocker_sprite_height
+        + blocker_player_height
+        + world_scroll_speed * lane_change_seconds;
+    var allow_blocker_lane_shift = blocker_distance_to_next_row
+        >= minimum_lane_change_gap;
+
+    if (
+        !scr_blocker_mask_has_escape(blocker_row_mask, id)
+        || !scr_blocker_masks_connected(
+            blocker_previous_row_mask,
+            blocker_row_mask,
+            id,
+            allow_blocker_lane_shift
+        )
+    )
+    {
+        blocker_row_mask = scr_blocker_pick_connected_mask(
+            blocker_previous_row_mask,
+            blocker_difficulty,
+            id,
+            allow_blocker_lane_shift
+        );
+    }
+
+    scr_blocker_spawn_mask(blocker_row_mask, id);
+    blocker_previous_row_mask = blocker_row_mask;
+
+    blocker_pattern_row += 1;
+    if (blocker_pattern_row >= 4)
+    {
+        array_push(blocker_recent_pattern_ids, blocker_current_pattern_id);
+        if (array_length(blocker_recent_pattern_ids) > 5)
+        {
+            var trimmed_recent_ids = [];
+            for (var recent_index = 1;
+                recent_index < array_length(blocker_recent_pattern_ids);
+                recent_index++)
+            {
+                array_push(
+                    trimmed_recent_ids,
+                    blocker_recent_pattern_ids[recent_index]
+                );
+            }
+            blocker_recent_pattern_ids = trimmed_recent_ids;
+        }
+
+        blocker_pattern_row = 0;
+        blocker_current_pattern_id = -1;
+    }
+
+    var next_row_is_close = blocker_pattern_row == 1
+        || blocker_pattern_row == 3;
+    var row_spacing = next_row_is_close
+        ? random_range(
+            blocker_cluster_spacing_min,
+            blocker_cluster_spacing_max
+        )
+        : random_range(
+            blocker_transition_spacing_min,
+            blocker_transition_spacing_max
+        );
+
+    blocker_distance_to_next_row = row_spacing;
+    blocker_spawn_timer = max(
+        0.48,
+        row_spacing / max(world_scroll_speed, 1)
+    );
+}
+else if (
+    blocker_generation_enabled
+    && blocker_hazard_breathers
+    && lockon_hazard_active_for_blockers
+    && blocker_spawn_timer <= 0
+)
+{
+    blocker_spawn_timer = 0.20;
 }
 
 // C forces the next coin tower for testing; otherwise it arrives occasionally.
@@ -171,8 +302,13 @@ if (
     coin_spawn_due
     && !instance_exists(obj_coin)
     && (
-        !instance_exists(obj_walking_duck)
-        || keyboard_check_pressed(ord("C"))
+        keyboard_check_pressed(ord("C"))
+        || (
+            lockon_spawn_timer > 1.5
+            && !instance_exists(obj_walking_duck)
+            && !instance_exists(obj_ufo_catcher)
+            && !instance_exists(obj_key_pusher)
+        )
     )
 )
 {
@@ -203,7 +339,8 @@ if (
 // H forces a duck for testing; automatic encounters wait for other hazards.
 duck_spawn_timer -= delta_seconds;
 var duck_manual_spawn = keyboard_check_pressed(ord("H"));
-var duck_auto_clear = !instance_exists(obj_coin)
+var duck_auto_clear = lockon_spawn_timer > 1.5
+    && !instance_exists(obj_coin)
     && !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
 

@@ -25,12 +25,16 @@ ticket_active_max = 8;
 // Four-row procedural blocker generation. Row timing is derived from world
 // distance so obstacle density remains stable as scrolling accelerates.
 blocker_generation_enabled = true;
-blocker_spawn_timer = 0.85;
+blocker_spawn_timer = 0.30;
 blocker_spawn_buffer = 64;
-blocker_row_spacing_min = 410;
-blocker_row_spacing_max = 520;
+blocker_cluster_spacing_min = 315;
+blocker_cluster_spacing_max = 380;
+blocker_transition_spacing_min = 570;
+blocker_transition_spacing_max = 640;
+blocker_distance_to_next_row = 640;
 blocker_patterns = scr_blocker_pattern_data();
 blocker_pattern_row = 0;
+blocker_previous_row_mask = 0;
 blocker_current_pattern_id = -1;
 blocker_recent_pattern_ids = [];
 blocker_mirror_current_pattern = false;
@@ -43,7 +47,7 @@ blocker_lane_width = 208;
 blocker_lane_count = 4;
 
 // Temporary hazard testing switches.
-debug_manual_lockon = true;
+debug_manual_lockon = false;
 debug_world_speed_step = 30;
 debug_world_speed_min = 30;
 debug_spawn_blockers = false;
@@ -56,9 +60,10 @@ blocker_spawn_left = 128;
 blocker_spawn_right = 960;
 
 // UFO and Key Pusher share one scheduler and never overlap.
-lockon_spawn_timer = 3;
-lockon_cooldown_min = 10;
-lockon_cooldown_max = 20;
+lockon_last_ufo_side = 0;
+lockon_spawn_timer = 2;
+lockon_cooldown_min = 4;
+lockon_cooldown_max = 6.5;
 
 // Autonomous coin tower: at most one active tower at a time.
 coin_spawn_timer = 5;

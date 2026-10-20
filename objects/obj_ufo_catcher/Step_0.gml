@@ -1,6 +1,23 @@
 var delta_seconds = game_delta_seconds();
 var player = instance_find(obj_player, 0);
 
+// Existing blockers continue moving during the entry and lock-on. Withdraw
+// before committing if they close every route that was safe at spawn time.
+if (
+    player != noone
+    && (
+        ufo_state == UfoState.ENTER
+        || ufo_state == UfoState.TRACK
+        || ufo_state == UfoState.LOCKED_WARNING
+    )
+    && !scr_ufo_has_escape_route(player)
+)
+{
+    ufo_exit_start_x = x;
+    ufo_slide_progress = 0;
+    ufo_state = UfoState.EXIT;
+}
+
 switch (ufo_state)
 {
     // Slide in from offscreen while following the player's height.
@@ -73,6 +90,7 @@ switch (ufo_state)
                     / ufo_extend_speed
             );
             ufo_state = UfoState.EXTEND;
+            depth = -100000;
         }
         break;
 
@@ -353,6 +371,7 @@ switch (ufo_state)
 
             if (release_completed)
             {
+                ufo_exit_start_x = x;
                 ufo_state = UfoState.EXIT;
                 ufo_slide_progress = 0;
             }
@@ -366,7 +385,7 @@ switch (ufo_state)
             1
         );
         var exit_eased = 1 - power(1 - ufo_slide_progress, 3);
-        x = lerp(ufo_anchor_x, ufo_offscreen_x, exit_eased);
+        x = lerp(ufo_exit_start_x, ufo_offscreen_x, exit_eased);
 
         if (ufo_slide_progress >= 1)
         {
