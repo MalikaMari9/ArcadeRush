@@ -1,23 +1,6 @@
 var delta_seconds = game_delta_seconds();
 var player = instance_find(obj_player, 0);
 
-// Existing blockers continue moving during the entry and lock-on. Withdraw
-// before committing if they close every route that was safe at spawn time.
-if (
-    player != noone
-    && (
-        ufo_state == UfoState.ENTER
-        || ufo_state == UfoState.TRACK
-        || ufo_state == UfoState.LOCKED_WARNING
-    )
-    && !scr_ufo_has_escape_route(player)
-)
-{
-    ufo_exit_start_x = x;
-    ufo_slide_progress = 0;
-    ufo_state = UfoState.EXIT;
-}
-
 switch (ufo_state)
 {
     // Slide in from offscreen while following the player's height.

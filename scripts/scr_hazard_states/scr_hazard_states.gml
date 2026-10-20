@@ -72,7 +72,7 @@ function scr_ufo_has_escape_route(_player)
                     _player.y,
                     target_x,
                     target_y,
-                    par_blocker,
+                    par_scrolling_blocker,
                     false,
                     true
                 ) == noone
@@ -81,7 +81,7 @@ function scr_ufo_has_escape_route(_player)
                     target_y + top_offset,
                     target_x + right_offset,
                     target_y + bottom_offset,
-                    par_blocker,
+                    par_scrolling_blocker,
                     false,
                     true
                 ) == noone
