@@ -8,6 +8,44 @@ if (ticket_controller != noone)
     y += max(0, ticket_controller.world_scroll_delta);
 }
 
+// A collected Magnet pulls every individual ticket inside the player's
+// radius. Collection and scoring still use the normal code below.
+var magnet_player = instance_find(obj_player, 0);
+
+if (
+    magnet_player != noone
+    && magnet_player.ticket_magnet_timer > 0
+    && !magnet_player.ufo_captured
+    && !magnet_player.scalper_captured
+)
+{
+    var magnet_distance = point_distance(
+        x,
+        y,
+        magnet_player.x,
+        magnet_player.y
+    );
+
+    if (magnet_distance > 0 && magnet_distance <= magnet_player.ticket_magnet_radius)
+    {
+        var magnet_ratio = magnet_distance / magnet_player.ticket_magnet_radius;
+        var magnet_speed = lerp(1000, 450, magnet_ratio);
+        var magnet_step = min(
+            magnet_distance,
+            magnet_speed * game_delta_seconds()
+        );
+        var magnet_direction = point_direction(
+            x,
+            y,
+            magnet_player.x,
+            magnet_player.y
+        );
+
+        x += lengthdir_x(magnet_step, magnet_direction);
+        y += lengthdir_y(magnet_step, magnet_direction);
+    }
+}
+
 var ticket_width = sprite_get_width(sprite_index) * abs(image_xscale);
 var ticket_height = sprite_get_height(sprite_index) * abs(image_yscale);
 var ticket_origin_x = sprite_get_xoffset(sprite_index) * abs(image_xscale);
@@ -44,7 +82,10 @@ if (!ticket_collected)
 
         if (ticket_controller != noone)
         {
-            ticket_controller.run_tickets += ticket_value;
+            var ticket_multiplier = (ticket_player.ticket_double_timer > 0)
+                ? 2
+                : 1;
+            ticket_controller.run_tickets += ticket_value * ticket_multiplier;
         }
 
         instance_destroy();
