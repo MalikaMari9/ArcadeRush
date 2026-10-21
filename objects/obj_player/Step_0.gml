@@ -78,6 +78,57 @@ else
     image_alpha = 1;
 }
 
+// Power-up time continues normally even while a hazard controls the player.
+ticket_magnet_timer = max(
+    0,
+    ticket_magnet_timer - game_delta_seconds()
+);
+
+if (ticket_magnet_timer > 0)
+{
+    ticket_magnet_visual_frame = (
+        ticket_magnet_visual_frame + 5 * game_delta_seconds()
+    ) mod sprite_get_number(spr_magnet_anim);
+    ticket_magnet_visual_time += game_delta_seconds();
+}
+else
+{
+    ticket_magnet_visual_frame = 0;
+    ticket_magnet_visual_time = 0;
+}
+
+ticket_double_timer = max(
+    0,
+    ticket_double_timer - game_delta_seconds()
+);
+
+if (ticket_double_timer > 0)
+{
+    ticket_double_visual_frame = (
+        ticket_double_visual_frame + 5 * game_delta_seconds()
+    ) mod sprite_get_number(spr_double_ticket);
+    ticket_double_visual_time += game_delta_seconds();
+}
+else
+{
+    ticket_double_visual_frame = 0;
+    ticket_double_visual_time = 0;
+}
+
+powerup_shield_timer = max(
+    0,
+    powerup_shield_timer - game_delta_seconds()
+);
+
+if (powerup_shield_timer > 0)
+{
+    powerup_shield_visual_time += game_delta_seconds();
+}
+else
+{
+    powerup_shield_visual_time = 0;
+}
+
 // If protection ends while overlapping a moving obstacle, remain intangible
 // until completely clear so collision cannot reactivate around the player.
 if (

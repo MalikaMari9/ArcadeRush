@@ -9,6 +9,12 @@ var delta_seconds = game_delta_seconds();
 
 ui_portrait_frame = (ui_portrait_frame
     + ui_portrait_fps * delta_seconds) mod 2;
+ui_magnet_frame = (ui_magnet_frame
+    + ui_magnet_fps * delta_seconds)
+    mod sprite_get_number(spr_magnet_anim);
+ui_double_ticket_frame = (ui_double_ticket_frame
+    + ui_double_ticket_fps * delta_seconds)
+    mod sprite_get_number(spr_double_ticket);
 
 if (ui_previous_lives < 0)
 {
@@ -16,6 +22,11 @@ if (ui_previous_lives < 0)
 }
 else if (current_lives < ui_previous_lives)
 {
+    // Keep the hurt portrait active through delayed releases (UFO/Scalpers)
+    // and clear it only after the resulting invulnerability has finished.
+    ui_hurt_active = true;
+    ui_hurt_saw_invulnerability = false;
+
     // Index 2 is the upper-right heart, 1 is the middle heart, and
     // 0 is the lower-left final heart.
     for (var lost_life = ui_previous_lives;
@@ -32,10 +43,26 @@ else if (current_lives < ui_previous_lives)
 else if (current_lives > ui_previous_lives)
 {
     // A reset or debug life increase restores every visible heart.
+    ui_hurt_active = false;
+    ui_hurt_saw_invulnerability = false;
+
     for (var reset_index = 0; reset_index < 3; reset_index++)
     {
         ui_heart_bursting[reset_index] = false;
         ui_heart_burst_frame[reset_index] = 0;
+    }
+}
+
+if (ui_hurt_active)
+{
+    if (ui_player.invulnerable)
+    {
+        ui_hurt_saw_invulnerability = true;
+    }
+    else if (ui_hurt_saw_invulnerability)
+    {
+        ui_hurt_active = false;
+        ui_hurt_saw_invulnerability = false;
     }
 }
 

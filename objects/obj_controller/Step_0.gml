@@ -9,6 +9,60 @@ world_scroll_speed = min(
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
+// M: spawn one Ticket Magnet in a random lane for testing.
+if (keyboard_check_pressed(ord("M")) && !instance_exists(obj_powerup_magnet))
+{
+    var magnet_lane = irandom(blocker_lane_count - 1);
+    var magnet_x = blocker_lane_left
+        + (magnet_lane + 0.5) * blocker_lane_width;
+    var magnet_sprite = object_get_sprite(obj_powerup_magnet);
+    var magnet_y = -sprite_get_height(magnet_sprite) * 0.5;
+
+    instance_create_layer(
+        magnet_x,
+        magnet_y,
+        "powerup",
+        obj_powerup_magnet
+    );
+}
+
+// B: spawn one Double Ticket booster in a random lane for testing.
+if (
+    keyboard_check_pressed(ord("B"))
+    && !instance_exists(obj_powerup_doubleticket)
+)
+{
+    var booster_lane = irandom(blocker_lane_count - 1);
+    var booster_x = blocker_lane_left
+        + (booster_lane + 0.5) * blocker_lane_width;
+    var booster_sprite = object_get_sprite(obj_powerup_doubleticket);
+    var booster_y = -sprite_get_height(booster_sprite) * 0.5;
+
+    instance_create_layer(
+        booster_x,
+        booster_y,
+        "powerup",
+        obj_powerup_doubleticket
+    );
+}
+
+// G: spawn one one-hit Shield power-up in a random lane for testing.
+if (keyboard_check_pressed(ord("G")) && !instance_exists(obj_powerup_shield))
+{
+    var shield_lane = irandom(blocker_lane_count - 1);
+    var shield_x = blocker_lane_left
+        + (shield_lane + 0.5) * blocker_lane_width;
+    var shield_sprite = object_get_sprite(obj_powerup_shield);
+    var shield_y = -sprite_get_height(shield_sprite) * 0.5;
+
+    instance_create_layer(
+        shield_x,
+        shield_y,
+        "powerup",
+        obj_powerup_shield
+    );
+}
+
 blocker_spawn_timer -= delta_seconds;
 
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
