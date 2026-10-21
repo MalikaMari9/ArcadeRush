@@ -17,7 +17,10 @@ var ticket_bottom = ticket_top + ticket_height;
 var ticket_left = x - ticket_origin_x;
 var ticket_right = ticket_left + ticket_width;
 
-depth = -floor(ticket_bottom);
+// Tickets win depth ties with blockers so an overlapping obstacle cannot
+// render over the collectible. Keep this tied to the ticket's lower edge so
+// player/world depth sorting still behaves naturally as the world scrolls.
+depth = -floor(ticket_bottom) - 2;
 
 if (!ticket_collected)
 {
