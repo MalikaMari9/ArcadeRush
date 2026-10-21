@@ -13,14 +13,20 @@ distance_pixels_per_metre = 100;
 score_per_metre = 10;
 run_tickets = 0;
 
-// Lightweight collectible-ticket scheduler. Ticket patterns and effects can
-// replace this later without changing the shared ticket objects.
-ticket_spawn_timer = 3;
-ticket_spawn_cooldown_min = 4;
-ticket_spawn_cooldown_max = 7;
-ticket_spawn_retry = 0.75;
-ticket_spawn_buffer = 24;
+// Ticket opportunities are evaluated per generated distance section. These
+// are playtesting values, not GDD-mandated frequencies.
+ticket_opportunity_chance_early = 0.65;
+ticket_opportunity_chance_mid = 0.70;
+ticket_opportunity_chance_late = 0.75;
+ticket_distance_to_next_opportunity = 360;
+ticket_opportunity_spacing_min = 500;
+ticket_opportunity_spacing_max = 720;
+ticket_spawn_buffer = 48;
+ticket_safe_clearance_early = 30;
+ticket_safe_clearance_late = 8;
+ticket_placement_attempts = 12;
 ticket_active_max = 8;
+ticket_debug_logging = false;
 
 // Four-row procedural blocker generation. Row timing is derived from world
 // distance so obstacle density remains stable as scrolling accelerates.

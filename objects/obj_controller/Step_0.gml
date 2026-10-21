@@ -9,85 +9,6 @@ world_scroll_speed = min(
 world_scroll_delta = world_scroll_speed * delta_seconds;
 distance_travelled += world_scroll_delta;
 
-// Spawn collectible ticket strips in random lanes. Higher denominations and
-// longer strips are intentionally less common.
-ticket_spawn_timer -= delta_seconds;
-
-if (ticket_spawn_timer <= 0 && instance_number(par_ticket) < ticket_active_max)
-{
-    var segment_roll = irandom(99);
-    var segment_count = 1;
-
-    if (segment_roll >= 85)
-    {
-        segment_count = 3;
-    }
-    else if (segment_roll >= 55)
-    {
-        segment_count = 2;
-    }
-
-    var ticket_lane = irandom(blocker_lane_count - 1);
-    var ticket_x = blocker_lane_left
-        + (ticket_lane + 0.5) * blocker_lane_width;
-    // All ticket sprites currently share these dimensions and origins.
-    var ticket_sprite = object_get_sprite(obj_ticket_1);
-    var ticket_height = sprite_get_height(ticket_sprite);
-    var ticket_origin_y = sprite_get_yoffset(ticket_sprite);
-    var ticket_spacing = 123;
-    var strip_height = ticket_height
-        + (segment_count - 1) * ticket_spacing;
-    var ticket_y = -ticket_spawn_buffer
-        - (ticket_height - ticket_origin_y)
-        - (segment_count - 1) * ticket_spacing;
-    var lane_left = blocker_lane_left
-        + ticket_lane * blocker_lane_width;
-    var lane_right = lane_left + blocker_lane_width;
-
-    // Delay briefly if an obstacle is already entering through this lane.
-    if (collision_rectangle(
-        lane_left,
-        ticket_y - ticket_origin_y,
-        lane_right,
-        strip_height,
-        par_scrolling_blocker,
-        false,
-        true
-    ) == noone)
-    {
-        for (var segment = 0; segment < segment_count; segment++)
-        {
-            var ticket_roll = irandom(99);
-            var ticket_object = obj_ticket_1;
-
-            if (ticket_roll >= 90)
-            {
-                ticket_object = obj_ticket_5;
-            }
-            else if (ticket_roll >= 60)
-            {
-                ticket_object = obj_ticket_2;
-            }
-
-            instance_create_layer(
-                ticket_x,
-                ticket_y + segment * ticket_spacing,
-                "Tickets",
-                ticket_object
-            );
-        }
-
-        ticket_spawn_timer = random_range(
-            ticket_spawn_cooldown_min,
-            ticket_spawn_cooldown_max
-        );
-    }
-    else
-    {
-        ticket_spawn_timer = ticket_spawn_retry;
-    }
-}
-
 blocker_spawn_timer -= delta_seconds;
 
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
@@ -240,6 +161,7 @@ if (
     }
 
     scr_blocker_spawn_mask(blocker_row_mask, id);
+
     blocker_previous_row_mask = blocker_row_mask;
 
     blocker_pattern_row += 1;
@@ -291,6 +213,164 @@ else if (
 )
 {
     blocker_spawn_timer = 0.20;
+}
+
+// Ticket opportunities follow generated distance sections, independently of
+// whether a particular section contains a blocker or a lock-on hazard.
+ticket_distance_to_next_opportunity -= world_scroll_delta;
+if (ticket_distance_to_next_opportunity <= 0)
+{
+    var ticket_difficulty = clamp(distance_travelled / 14000, 0, 1);
+    var ticket_chance = lerp(
+        ticket_opportunity_chance_early,
+        ticket_opportunity_chance_mid,
+        min(1, ticket_difficulty / 0.5)
+    );
+    if (ticket_difficulty >= 0.5)
+    {
+        ticket_chance = lerp(
+            ticket_opportunity_chance_mid,
+            ticket_opportunity_chance_late,
+            (ticket_difficulty - 0.5) / 0.5
+        );
+    }
+
+    var ticket_roll_succeeded = random(1) < ticket_chance;
+    var ticket_candidates_tested = 0;
+    var ticket_rejections = 0;
+    var ticket_placement_found = false;
+    var ticket_active_cap_blocked = false;
+    var ticket_segment_roll = irandom(99);
+    var ticket_segment_count = 1;
+    if (ticket_segment_roll >= 85) ticket_segment_count = 3;
+    else if (ticket_segment_roll >= 55) ticket_segment_count = 2;
+
+    if (
+        ticket_roll_succeeded
+        && instance_number(par_ticket) + ticket_segment_count
+            <= ticket_active_max
+    )
+    {
+        // Reuse the current ticket objects, 1/2/3 formation, and value rolls.
+        var ticket_sprite = object_get_sprite(obj_ticket_1);
+        var ticket_width = sprite_get_width(ticket_sprite);
+        var ticket_height = sprite_get_height(ticket_sprite);
+        var ticket_origin_x = sprite_get_xoffset(ticket_sprite);
+        var ticket_origin_y = sprite_get_yoffset(ticket_sprite);
+        var ticket_spacing = 123;
+        var ticket_left_limit = blocker_spawn_left + ticket_width * 0.5;
+        var ticket_right_limit = blocker_spawn_right - ticket_width * 0.5;
+        var ticket_y = -ticket_spawn_buffer
+            - (ticket_height - ticket_origin_y)
+            - (ticket_segment_count - 1) * ticket_spacing;
+        var ticket_clearance = lerp(
+            ticket_safe_clearance_early,
+            ticket_safe_clearance_late,
+            ticket_difficulty
+        );
+        var ticket_x = 0;
+        // The blocker mask already retains its escape route. Tickets do not
+        // collide with the player, so nearby formations offer optional risk.
+        // Reject only direct/crowded intersections with scrolling blockers;
+        // active UFOs, pushers, coins, ducks, and the Scalpers are not vetoes.
+        for (var ticket_attempt = 0;
+            ticket_attempt < ticket_placement_attempts;
+            ticket_attempt++)
+        {
+            ticket_candidates_tested++;
+            var candidate_x = random_range(
+                ticket_left_limit + ticket_origin_x,
+                ticket_right_limit - (ticket_width - ticket_origin_x)
+            );
+            var candidate_clear = true;
+
+            for (var ticket_segment = 0;
+                ticket_segment < ticket_segment_count;
+                ticket_segment++)
+            {
+                var candidate_y = ticket_y
+                    + ticket_segment * ticket_spacing;
+                var candidate_left = candidate_x - ticket_origin_x
+                    - ticket_clearance;
+                var candidate_top = candidate_y - ticket_origin_y
+                    - ticket_clearance;
+                var candidate_right = candidate_x
+                    + (ticket_width - ticket_origin_x)
+                    + ticket_clearance;
+                var candidate_bottom = candidate_y
+                    + (ticket_height - ticket_origin_y)
+                    + ticket_clearance;
+
+                if (collision_rectangle(
+                    candidate_left,
+                    candidate_top,
+                    candidate_right,
+                    candidate_bottom,
+                    par_scrolling_blocker,
+                    false,
+                    true
+                ) != noone)
+                {
+                    candidate_clear = false;
+                    ticket_rejections++;
+                    break;
+                }
+            }
+
+            if (candidate_clear)
+            {
+                ticket_x = candidate_x;
+                ticket_placement_found = true;
+                break;
+            }
+        }
+
+        if (ticket_placement_found)
+        {
+            for (var ticket_index = 0;
+                ticket_index < ticket_segment_count;
+                ticket_index++)
+            {
+                var ticket_value_roll = irandom(99);
+                var ticket_object = obj_ticket_1;
+                if (ticket_value_roll >= 90) ticket_object = obj_ticket_5;
+                else if (ticket_value_roll >= 60) ticket_object = obj_ticket_2;
+
+                instance_create_layer(
+                    ticket_x,
+                    ticket_y + ticket_index * ticket_spacing,
+                    "Tickets",
+                    ticket_object
+                );
+            }
+        }
+    }
+    else if (ticket_roll_succeeded)
+    {
+        ticket_active_cap_blocked = true;
+    }
+
+    if (ticket_debug_logging)
+    {
+        var ticket_result = "spawned";
+        if (!ticket_roll_succeeded) ticket_result = "chance failed";
+        else if (ticket_active_cap_blocked) ticket_result = "active cap";
+        else if (!ticket_placement_found) ticket_result = "no clear position";
+
+        show_debug_message(
+            "Ticket opportunity: " + ticket_result
+            + ", chance=" + string(ticket_chance)
+            + ", candidates=" + string(ticket_candidates_tested)
+            + ", rejected=" + string(ticket_rejections)
+        );
+    }
+
+    // A distance-based section interval keeps occurrence tied to progression
+    // rather than to elapsed seconds or successful prior spawns.
+    ticket_distance_to_next_opportunity = random_range(
+        ticket_opportunity_spacing_min,
+        ticket_opportunity_spacing_max
+    );
 }
 
 // C forces the next coin tower for testing; otherwise it arrives occasionally.
