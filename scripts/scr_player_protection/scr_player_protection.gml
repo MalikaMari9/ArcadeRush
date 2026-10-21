@@ -36,7 +36,22 @@ function player_apply_hazard_damage()
         return false;
     }
 
+    // The shield consumes one genuine hit before lives or other power-ups are
+    // touched. Starting protection here also covers callers that only begin
+    // i-frames after this function reports real life damage.
+    if (powerup_shield_timer > 0)
+    {
+        powerup_shield_timer = 0;
+        player_start_hazard_invulnerability();
+        return false;
+    }
+
     player_lives -= 1;
+
+    // Any real life loss cancels the active Ticket Magnet. Contact during
+    // invulnerability returns above, so protected hits do not remove it.
+    ticket_magnet_timer = 0;
+    ticket_double_timer = 0;
 
     // Temporary game-over stand-in until the final game-over flow exists.
     if (player_lives <= 0)
