@@ -63,210 +63,100 @@ if (keyboard_check_pressed(ord("G")) && !instance_exists(obj_powerup_shield))
     );
 }
 
-blocker_spawn_timer -= delta_seconds;
-
 var lockon_is_clear = !instance_exists(obj_ufo_catcher)
     && !instance_exists(obj_key_pusher);
 var lockon_support_hazards_clear = !instance_exists(obj_coin)
     && !instance_exists(obj_walking_duck);
+var key_pressed = keyboard_check_pressed(ord("K"));
+var ufo_pressed = keyboard_check_pressed(ord("U"));
 
-// U and K remain manual test controls while preserving encounter exclusivity.
-if (
-    lockon_is_clear
-    && lockon_support_hazards_clear
-    && keyboard_check_pressed(ord("U"))
-)
-{
-    instance_create_layer(0, 0, "Instances", obj_ufo_catcher);
-    lockon_spawn_timer = random_range(
-        lockon_cooldown_min,
-        lockon_cooldown_max
-    );
-    coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
-    duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
-}
-else if (
-    lockon_is_clear
-    && lockon_support_hazards_clear
-    && keyboard_check_pressed(ord("K"))
-)
-{
-    instance_create_layer(0, 0, "Instances", obj_key_pusher);
-    lockon_spawn_timer = random_range(
-        lockon_cooldown_min,
-        lockon_cooldown_max
-    );
-    coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
-    duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
-}
-else if (!debug_manual_lockon && lockon_is_clear)
-{
-    // Let the timer finish behind a coin/duck, then start as soon as they clear.
-    lockon_spawn_timer = max(0, lockon_spawn_timer - delta_seconds);
+// The timer advances even while an encounter is active. UFO and Key Pusher
+// never overlap one another, and automatic encounters prefer alternation.
+lockon_spawn_timer = max(0, lockon_spawn_timer - delta_seconds);
 
-    if (lockon_spawn_timer <= 0 && lockon_support_hazards_clear)
+if (lockon_is_clear)
+{
+    var forced_type = 0;
+    if (ufo_pressed) forced_type = 1;
+    else if (key_pressed) forced_type = 2;
+
+    if (lockon_spawn_timer <= 0 && !lockon_support_hazards_clear)
+        lockon_support_wait += delta_seconds;
+    else if (lockon_support_hazards_clear)
+        lockon_support_wait = 0;
+
+    var due_for_auto = !debug_manual_lockon
+        && lockon_spawn_timer <= 0
+        && (lockon_support_hazards_clear
+            || lockon_support_wait >= lockon_support_wait_limit);
+
+    if (forced_type != 0 || due_for_auto)
     {
-        var lockon_object = (random(1) < 0.55)
-            ? obj_ufo_catcher
-            : obj_key_pusher;
+        var spawn_type = (forced_type != 0)
+            ? forced_type
+            : ((lockon_last_type == 1) ? 2 : 1);
         var lockon_player = instance_find(obj_player, 0);
 
-        if (
-            lockon_object == obj_ufo_catcher
-            && !scr_ufo_has_escape_route(lockon_player)
-        ) lockon_object = obj_key_pusher;
+        if (spawn_type == 1 && !scr_ufo_has_escape_route(lockon_player))
+            spawn_type = 2;
 
-        instance_create_layer(0, 0, "Instances", lockon_object);
+        instance_create_layer(
+            0,
+            0,
+            "Instances",
+            (spawn_type == 1) ? obj_ufo_catcher : obj_key_pusher
+        );
+        lockon_last_type = spawn_type;
         lockon_spawn_timer = random_range(
             lockon_cooldown_min,
             lockon_cooldown_max
         );
-        coin_spawn_timer = max(coin_spawn_timer, coin_spawn_cooldown_min);
-        duck_spawn_timer = max(duck_spawn_timer, duck_spawn_cooldown_min);
+        lockon_support_wait = 0;
+
+        // Delay only the next support hazard. An existing coin or duck is
+        // allowed to finish while the new lock-on encounter begins.
+        coin_spawn_timer = max(coin_spawn_timer, 5);
+        duck_spawn_timer = max(duck_spawn_timer, 6);
     }
 }
 
-// Generate route-aware four-row formations. Pattern time pauses while a
-// lock-on hazard owns the playfield.
-var lockon_hazard_active_for_blockers = instance_exists(obj_ufo_catcher)
-    || instance_exists(obj_key_pusher);
-
-if (
-    blocker_generation_enabled
-    && blocker_spawn_timer <= 0
-    && !(blocker_hazard_breathers && lockon_hazard_active_for_blockers)
-)
+// Keep a continuous obstacle stream. During UFO/Key Pusher attacks, the row
+// selector limits each new row to one blocker instead of pausing the stream.
+if (blocker_generation_enabled)
 {
-    var blocker_difficulty = clamp(distance_travelled / 14000, 0, 1);
+    blocker_distance_remaining -= world_scroll_delta;
 
-    if (blocker_pattern_row == 0)
+    if (blocker_distance_remaining <= 0)
     {
-        blocker_current_pattern_id = scr_blocker_pick_pattern(
-            blocker_patterns,
+        var blocker_difficulty = clamp(distance_travelled / 18000, 0, 1);
+        var lockon_active = instance_exists(obj_ufo_catcher)
+            || instance_exists(obj_key_pusher);
+        var blocker_row_mask = scr_blocker_pick_routed_mask(
+            blocker_safe_lane,
             blocker_difficulty,
-            blocker_recent_pattern_ids
-        );
-        blocker_mirror_current_pattern = (irandom(1) == 1);
-        blocker_reverse_current_pattern = (irandom(1) == 1);
-    }
-
-    var active_pattern = blocker_patterns[blocker_current_pattern_id];
-    var active_row_index = blocker_reverse_current_pattern
-        ? 3 - blocker_pattern_row
-        : blocker_pattern_row;
-    var blocker_row_mask = active_pattern.rows[active_row_index];
-
-    var blocker_mutation_chance = lerp(0.32, 0.52, blocker_difficulty);
-    if (random(1) < blocker_mutation_chance)
-    {
-        var triple_chance = lerp(0.10, 0.30, blocker_difficulty);
-        blocker_row_mask = (random(1) < triple_chance)
-            ? choose(7, 11, 13, 14)
-            : choose(1, 2, 4, 8, 3, 6, 12, 9);
-    }
-
-    var blocker_breather_chance = lerp(0.075, 0.025, blocker_difficulty);
-    if (blocker_row_mask != 0 && random(1) < blocker_breather_chance)
-    {
-        blocker_row_mask = 0;
-    }
-
-    if (blocker_mirror_current_pattern)
-    {
-        blocker_row_mask = scr_blocker_mirror_mask(blocker_row_mask);
-    }
-
-    var blocker_player = instance_find(obj_player, 0);
-    var blocker_player_height = 260;
-    var blocker_player_speed = 500;
-    if (blocker_player != noone)
-    {
-        blocker_player_height = blocker_player.bbox_bottom
-            - blocker_player.bbox_top + 1;
-        blocker_player_speed = blocker_player.move_speed;
-    }
-
-    var blocker_sprite = object_get_sprite(obj_blocker1);
-    var blocker_sprite_height = sprite_get_height(blocker_sprite);
-    var lane_change_seconds = blocker_lane_width
-        / max(1, blocker_player_speed);
-    var minimum_lane_change_gap = blocker_sprite_height
-        + blocker_player_height
-        + world_scroll_speed * lane_change_seconds;
-    var allow_blocker_lane_shift = blocker_distance_to_next_row
-        >= minimum_lane_change_gap;
-
-    if (
-        !scr_blocker_mask_has_escape(blocker_row_mask, id)
-        || !scr_blocker_masks_connected(
+            id,
             blocker_previous_row_mask,
+            lockon_active
+        );
+
+        scr_blocker_spawn_mask(blocker_row_mask, id);
+        blocker_previous_row_mask = blocker_row_mask;
+        blocker_rows_spawned += 1;
+
+        // Move the reserved route only to an adjacent lane that is also
+        // physically open in the row that was just spawned.
+        blocker_safe_lane = scr_blocker_choose_next_safe_lane(
+            blocker_safe_lane,
             blocker_row_mask,
-            id,
-            allow_blocker_lane_shift
-        )
-    )
-    {
-        blocker_row_mask = scr_blocker_pick_connected_mask(
-            blocker_previous_row_mask,
-            blocker_difficulty,
-            id,
-            allow_blocker_lane_shift
-        );
-    }
-
-    scr_blocker_spawn_mask(blocker_row_mask, id);
-
-    blocker_previous_row_mask = blocker_row_mask;
-
-    blocker_pattern_row += 1;
-    if (blocker_pattern_row >= 4)
-    {
-        array_push(blocker_recent_pattern_ids, blocker_current_pattern_id);
-        if (array_length(blocker_recent_pattern_ids) > 5)
-        {
-            var trimmed_recent_ids = [];
-            for (var recent_index = 1;
-                recent_index < array_length(blocker_recent_pattern_ids);
-                recent_index++)
-            {
-                array_push(
-                    trimmed_recent_ids,
-                    blocker_recent_pattern_ids[recent_index]
-                );
-            }
-            blocker_recent_pattern_ids = trimmed_recent_ids;
-        }
-
-        blocker_pattern_row = 0;
-        blocker_current_pattern_id = -1;
-    }
-
-    var next_row_is_close = blocker_pattern_row == 1
-        || blocker_pattern_row == 3;
-    var row_spacing = next_row_is_close
-        ? random_range(
-            blocker_cluster_spacing_min,
-            blocker_cluster_spacing_max
-        )
-        : random_range(
-            blocker_transition_spacing_min,
-            blocker_transition_spacing_max
+            id
         );
 
-    blocker_distance_to_next_row = row_spacing;
-    blocker_spawn_timer = max(
-        0.48,
-        row_spacing / max(world_scroll_speed, 1)
-    );
-}
-else if (
-    blocker_generation_enabled
-    && blocker_hazard_breathers
-    && lockon_hazard_active_for_blockers
-    && blocker_spawn_timer <= 0
-)
-{
-    blocker_spawn_timer = 0.20;
+        // Preserve fractional carry so frame rate does not change density.
+        blocker_distance_remaining += random_range(
+            blocker_row_spacing_min,
+            blocker_row_spacing_max
+        );
+    }
 }
 
 // Ticket opportunities follow generated distance sections, independently of
@@ -446,22 +336,64 @@ if (
     )
 )
 {
-    var coin_lane = irandom(blocker_lane_count - 1);
-    var coin_x = blocker_lane_left
-        + (coin_lane + 0.5) * blocker_lane_width;
     var coin_y = -coin_spawn_buffer;
+    var coin_candidates = [];
 
-    // Keep the arrival clear of obstacles already entering from above.
-    if (collision_rectangle(
-        coin_x - blocker_lane_width * 0.5,
-        coin_y - sprite_get_height(spr_coins),
-        coin_x + blocker_lane_width * 0.5,
-        coin_y + blocker_lane_width,
-        par_scrolling_blocker,
-        false,
-        true
-    ) == noone)
+    // Use inner lanes so the tower can fall sideways. A candidate is valid
+    // only when its arrival area and at least one adjacent lane are clear.
+    for (var coin_lane_check = 1;
+        coin_lane_check < blocker_lane_count - 1;
+        coin_lane_check++)
     {
+        var coin_candidate_x = blocker_lane_left
+            + (coin_lane_check + 0.5) * blocker_lane_width;
+        var coin_candidate_clear = collision_rectangle(
+            coin_candidate_x - blocker_lane_width * 0.5,
+            coin_y - sprite_get_height(spr_coins),
+            coin_candidate_x + blocker_lane_width * 0.5,
+            coin_y + blocker_lane_width,
+            par_scrolling_blocker,
+            false,
+            true
+        ) == noone;
+
+        var coin_left_escape_x = coin_candidate_x - blocker_lane_width;
+        var coin_right_escape_x = coin_candidate_x + blocker_lane_width;
+        var coin_left_escape_clear = collision_rectangle(
+            coin_left_escape_x - blocker_lane_width * 0.5,
+            coin_y - sprite_get_height(spr_coins),
+            coin_left_escape_x + blocker_lane_width * 0.5,
+            coin_y + blocker_lane_width,
+            par_scrolling_blocker,
+            false,
+            true
+        ) == noone;
+        var coin_right_escape_clear = collision_rectangle(
+            coin_right_escape_x - blocker_lane_width * 0.5,
+            coin_y - sprite_get_height(spr_coins),
+            coin_right_escape_x + blocker_lane_width * 0.5,
+            coin_y + blocker_lane_width,
+            par_scrolling_blocker,
+            false,
+            true
+        ) == noone;
+
+        if (
+            coin_candidate_clear
+            && (coin_left_escape_clear || coin_right_escape_clear)
+        ) array_push(coin_candidates, coin_lane_check);
+    }
+
+    // If both inner lanes are obstructed, leave the timer due and retry on a
+    // later step instead of forcing the tower into an unsafe formation.
+    if (array_length(coin_candidates) > 0)
+    {
+        var coin_lane = coin_candidates[
+            irandom(array_length(coin_candidates) - 1)
+        ];
+        var coin_x = blocker_lane_left
+            + (coin_lane + 0.5) * blocker_lane_width;
+
         instance_create_layer(coin_x, coin_y, "Obstacles", obj_coin);
         coin_spawn_timer = random_range(
             coin_spawn_cooldown_min,
