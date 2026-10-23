@@ -3,6 +3,8 @@ move_speed = 500;
 
 // Temporary protection/life state. Damage behavior will be added later.
 player_lives = 3;
+player_dead = false;
+player_last_damage_cause = PlayerDamageCause.UNKNOWN;
 
 // The runner always faces forward into the scrolling arcade.
 player_horizontal_facing = 1;

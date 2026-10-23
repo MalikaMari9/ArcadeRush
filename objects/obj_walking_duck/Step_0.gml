@@ -129,7 +129,9 @@ switch (duck_state)
             {
                 with (explosion_hit)
                 {
-                    if (player_apply_hazard_damage())
+                    if (player_apply_hazard_damage(
+                        PlayerDamageCause.DUCK_EXPLOSION
+                    ))
                     {
                         player_start_hazard_invulnerability();
                     }
@@ -177,7 +179,9 @@ for (var bullet_index = array_length(duck_bullets) - 1;
     {
         with (bullet_hit)
         {
-            if (player_apply_hazard_damage())
+            if (player_apply_hazard_damage(
+                PlayerDamageCause.DUCK_SHOT
+            ))
             {
                 player_start_hazard_invulnerability();
             }

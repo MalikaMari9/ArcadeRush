@@ -131,7 +131,7 @@ if (coin_fall_progress >= 1)
     {
         with (hit_player)
         {
-            if (player_apply_hazard_damage())
+            if (player_apply_hazard_damage(PlayerDamageCause.COIN))
             {
                 player_start_hazard_invulnerability();
             }

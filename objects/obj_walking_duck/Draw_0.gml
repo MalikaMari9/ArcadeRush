@@ -1,21 +1,38 @@
-// Debug circle: this same radius is used for explosion damage.
 var old_color = draw_get_color();
 var old_alpha = draw_get_alpha();
-draw_set_color(c_red);
-draw_set_alpha(0.75);
-draw_circle(x, y, duck_explosion_radius, true);
-draw_set_color(old_color);
-draw_set_alpha(old_alpha);
 
 if (duck_state == 5)
 {
-    var explosion_progress = 1
-        - duck_explosion_timer / duck_explosion_duration;
-    draw_set_color(c_red);
-    draw_set_alpha(0.26 * (1 - explosion_progress));
-    draw_circle(x, y, duck_explosion_radius, false);
-    draw_set_color(old_color);
-    draw_set_alpha(old_alpha);
+    if (duck_explosion_timer > 0)
+    {
+        var explosion_progress = clamp(
+            1 - duck_explosion_timer / duck_explosion_duration,
+            0,
+            1
+        );
+        var explosion_frames = sprite_get_number(spr_explosion_anim);
+        var explosion_frame = min(
+            explosion_frames - 1,
+            floor(explosion_progress * explosion_frames)
+        );
+        var explosion_scale = duck_explosion_radius * 2
+            / max(
+                sprite_get_width(spr_explosion_anim),
+                sprite_get_height(spr_explosion_anim)
+            );
+
+        draw_sprite_ext(
+            spr_explosion_anim,
+            explosion_frame,
+            x,
+            y,
+            explosion_scale,
+            explosion_scale,
+            0,
+            c_white,
+            1
+        );
+    }
 }
 else
 {

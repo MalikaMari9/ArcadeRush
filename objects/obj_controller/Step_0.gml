@@ -1,6 +1,36 @@
 // Limit the time step so a lag spike cannot move the world an unsafe distance.
 var delta_seconds = game_delta_seconds();
 
+// A lethal hit is deliberately not an immediate cut. Scalpers finish their
+// release, while a lethal UFO keeps its victim held during the readable beat.
+var game_over_player = instance_find(obj_player, 0);
+if (game_over_player != noone && game_over_player.player_dead)
+{
+    world_scroll_delta = 0;
+
+    // A lethal UFO capture deliberately keeps the player inside the claw.
+    // Unlike the Scalpers, it does not need to release before the delay runs.
+    var lethal_ufo_hold = game_over_player.ufo_captured
+        && game_over_player.player_last_damage_cause
+            == PlayerDamageCause.UFO;
+
+    if (
+        (!game_over_player.ufo_captured || lethal_ufo_hold)
+        && !game_over_player.scalper_captured
+    )
+    {
+        game_over_wait_timer += delta_seconds;
+    }
+
+    if (game_over_wait_timer >= game_over_hurt_duration)
+    {
+        if (!instance_exists(obj_gameover))
+            instance_create_layer(0, 0, "Gameover", obj_gameover);
+    }
+
+    exit;
+}
+
 world_scroll_speed = min(
     world_scroll_speed + world_scroll_acceleration * delta_seconds,
     world_scroll_speed_max

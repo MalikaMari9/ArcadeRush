@@ -95,7 +95,9 @@ switch (key_state)
                 {
                     with (hit_player)
                     {
-                        if (player_apply_hazard_damage())
+                        if (player_apply_hazard_damage(
+                            PlayerDamageCause.KEYMASTER
+                        ))
                         {
                             player_start_hazard_invulnerability();
                         }

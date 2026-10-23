@@ -5,7 +5,15 @@ var scalper_world_speed = (scalper_controller != noone)
 var scalper_target_fps = scalper_base_animation_fps
     * scalper_world_speed
     / scalper_reference_scroll_speed;
-image_speed = scalper_target_fps / scalper_native_animation_fps;
+var scalper_player = instance_find(obj_player, 0);
+var scalper_game_over = scalper_player != noone
+    && scalper_player.player_dead;
+
+// Preserve the current crowd frame at game over. The bite state machine must
+// continue so a lethal Scalper capture can still finish releasing the player.
+image_speed = scalper_game_over
+    ? 0
+    : scalper_target_fps / scalper_native_animation_fps;
 
 if (scalper_entering)
 {
@@ -78,7 +86,9 @@ else
                 {
                     with (scalper_bite_player)
                     {
-                        player_apply_hazard_damage();
+                        player_apply_hazard_damage(
+                            PlayerDamageCause.SCALPER
+                        );
                     }
 
                     // Damage swaps to the next life sprite, whose mask can

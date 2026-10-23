@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"shd_color_burn",
+  "name":"shd_color_burn",
+  "parent":{
+    "name":"Shaders",
+    "path":"folders/Shaders.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

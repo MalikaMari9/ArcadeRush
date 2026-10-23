@@ -156,9 +156,30 @@ if (scalper_captured)
     exit;
 }
 
+// A lethal hit leaves the runner facing the camera in the hurt animation.
+// The controller waits for this pose before freezing the scene and opening
+// the game-over presentation.
+if (player_dead)
+{
+    player_refresh_appearance();
+    image_alpha = 1;
+    image_xscale = 1;
+    image_speed = 1;
+    exit;
+}
+
 // Read WASD input as a two-dimensional player movement vector.
 var input_x = keyboard_check(ord("D")) - keyboard_check(ord("A"));
 var input_y = keyboard_check(ord("S")) - keyboard_check(ord("W"));
+
+// Mobile and mouse testing use the same movement path as the keyboard so
+// collision resolution, margins, and obstacle sliding remain authoritative.
+var touch_controller = instance_find(obj_touch_controller, 0);
+if (touch_controller != noone)
+{
+    input_x += touch_controller.touch_move_x;
+    input_y += touch_controller.touch_move_y;
+}
 
 // Temporary test controls: 3 = bag, 2 = tag, 1 = body.
 if (keyboard_check_pressed(ord("3"))) player_lives = 3;
@@ -177,10 +198,11 @@ player_refresh_appearance();
 // A multiplier of 1 uses the sprite's configured 5 FPS speed.
 image_speed = 1;
 
-// Normalize input so diagonal movement is not faster.
+// Cap combined keyboard/touch input so diagonals are not faster while
+// retaining the joystick's analogue strength inside its outer radius.
 var input_length = sqrt(input_x * input_x + input_y * input_y);
 
-if (input_length > 0)
+if (input_length > 1)
 {
     input_x /= input_length;
     input_y /= input_length;

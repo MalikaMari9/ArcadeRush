@@ -245,10 +245,22 @@ switch (ufo_state)
                 {
                     with (release_player)
                     {
-                        player_apply_hazard_damage();
+                        player_apply_hazard_damage(PlayerDamageCause.UFO);
                     }
 
                     ufo_damage_applied = true;
+                }
+
+                // A lethal capture ends in the claw. Keep the player at the
+                // fully retracted head instead of searching for a respawn
+                // point and spitting them back into the play area.
+                if (release_player.player_dead)
+                {
+                    release_player.x = (ufo_side == 1)
+                        ? x - ufo_minimum_width + ufo_claw_center_offset
+                        : x + ufo_minimum_width - ufo_claw_center_offset;
+                    release_player.y = y;
+                    break;
                 }
 
                 var release_left_offset = release_player.bbox_left - release_player.x;

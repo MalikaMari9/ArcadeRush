@@ -14,6 +14,11 @@ distance_travelled = 0;
 distance_pixels_per_metre = 100;
 run_tickets = 0;
 
+// A lethal player hit first shows the front-facing hurt animation. The
+// dedicated obj_gameover takes ownership after this short delay.
+game_over_wait_timer = 0;
+game_over_hurt_duration = 0.80;
+
 // Ticket opportunities are evaluated per generated distance section. These
 // are playtesting values, not GDD-mandated frequencies.
 ticket_opportunity_chance_early = 0.65;

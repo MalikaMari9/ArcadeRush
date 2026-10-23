@@ -1,5 +1,39 @@
+enum PlayerDamageCause
+{
+    UNKNOWN,
+    UFO,
+    SCALPER,
+    KEYMASTER,
+    COIN,
+    DUCK_SHOT,
+    DUCK_EXPLOSION
+}
+
+function player_game_over_sprite(_cause)
+{
+    switch (_cause)
+    {
+        case PlayerDamageCause.UFO:
+            return spr_gameover_ufo;
+        case PlayerDamageCause.SCALPER:
+            return spr_gameover_scalper;
+        case PlayerDamageCause.KEYMASTER:
+            return spr_gameover_keymaster;
+        case PlayerDamageCause.COIN:
+            return spr_gameover_coin;
+        case PlayerDamageCause.DUCK_SHOT:
+            return spr_gameover_duck_shoot;
+        case PlayerDamageCause.DUCK_EXPLOSION:
+            return spr_gameover_duck_explosion;
+    }
+
+    return spr_gameover_coin;
+}
+
 function player_get_protection_sprite(_lives)
 {
+    if (_lives <= 0) return spr_cat_hurt_expression;
+
     switch (_lives)
     {
         case 3: return spr_cat_back_bag;
@@ -25,11 +59,11 @@ function player_refresh_appearance(_reset_frame = false)
     }
 
     image_speed = 1;
-    image_xscale = player_horizontal_facing;
+    image_xscale = (player_lives <= 0) ? 1 : player_horizontal_facing;
 }
 
 // Call in the player instance's scope. Returns false when protection blocks it.
-function player_apply_hazard_damage()
+function player_apply_hazard_damage(_cause = PlayerDamageCause.UNKNOWN)
 {
     if (invulnerable)
     {
@@ -46,17 +80,20 @@ function player_apply_hazard_damage()
         return false;
     }
 
-    player_lives -= 1;
+    player_lives = max(0, player_lives - 1);
+    player_last_damage_cause = _cause;
 
     // Any real life loss cancels the active Ticket Magnet. Contact during
     // invulnerability returns above, so protected hits do not remove it.
     ticket_magnet_timer = 0;
     ticket_double_timer = 0;
 
-    // Temporary game-over stand-in until the final game-over flow exists.
     if (player_lives <= 0)
     {
-        player_lives = 3;
+        player_dead = true;
+        invulnerable = true;
+        phase_through_obstacles = true;
+        image_alpha = 1;
     }
 
     player_refresh_appearance(true);

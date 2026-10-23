@@ -11,6 +11,10 @@ var portrait_sprite;
 
 switch (ui_lives)
 {
+    case 0:
+        portrait_sprite = spr_cat_hurt_expression;
+        break;
+
     case 3:
         portrait_sprite = spr_cat_front_bag;
         break;
@@ -30,7 +34,7 @@ draw_sprite(portrait_sprite, floor(ui_portrait_frame), 108, 126);
 
 // The hurt body is layered over the current portrait so its bag or tag
 // remains visible around the changed expression.
-if (ui_hurt_active)
+if (ui_hurt_active && !ui_player.player_dead)
 {
     draw_sprite(
         spr_cat_hurt_expression,
