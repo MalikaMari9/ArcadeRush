@@ -19,20 +19,29 @@ run_tickets = 0;
 game_over_wait_timer = 0;
 game_over_hurt_duration = 0.80;
 
-// Ticket opportunities are evaluated per generated distance section. These
-// are playtesting values, not GDD-mandated frequencies.
-ticket_opportunity_chance_early = 0.65;
-ticket_opportunity_chance_mid = 0.70;
-ticket_opportunity_chance_late = 0.75;
-ticket_distance_to_next_opportunity = 360;
-ticket_opportunity_spacing_min = 500;
-ticket_opportunity_spacing_max = 720;
-ticket_spawn_buffer = 48;
-ticket_safe_clearance_early = 30;
-ticket_safe_clearance_late = 8;
-ticket_placement_attempts = 12;
-ticket_active_max = 8;
-ticket_debug_logging = false;
+// Collectibles are generated along each validated blocker row, in the
+// open corridor between this row and the previous row. All tuning is here.
+ticket_active_max = 23;
+ticket_rows_since_spawn = 0;
+ticket_trail_start_y = -250;
+ticket_trail_spacing = 120;
+ticket_spawn_clearance = 14;
+// Keep recent reward lanes varied without sacrificing reachable placements.
+ticket_lane_heat = [0, 0, 0, 0];
+ticket_last_lane = -1;
+ticket_last_style = -1;
+
+// First power-up arrives after ~7-11 seconds at the starting scroll speed.
+// Later opportunities average ~12 seconds apart, independent of frame rate.
+// Only one uncollected power-up may be on screen at a time.
+powerup_distance_remaining = random_range(1900, 2600);
+powerup_spacing_min = 3300;
+powerup_spacing_max = 4600;
+powerup_active_max = 1;
+powerup_last_kind = -1;
+powerup_spawn_y = 85;
+powerup_sprite_scale = 0.64;
+powerup_clearance = 20;
 
 // Continuous distance-driven rows. The minimum gap is larger than the
 // tallest blocker plus the largest player collision mask, and one physically
@@ -45,6 +54,11 @@ blocker_distance_remaining = 250;
 blocker_previous_row_mask = 0;
 blocker_safe_lane = irandom(3);
 blocker_rows_spawned = 0;
+// Switch the protected route between halves of the screen. Without this,
+// physically wide blockers make the originally random walk settle rightward.
+blocker_route_target_lane = irandom(3);
+blocker_route_dwell = 0;
+blocker_route_dwell_goal = irandom_range(4, 8);
 
 // Four measured lanes between the margins.
 blocker_lane_left = 124;

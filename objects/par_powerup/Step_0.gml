@@ -12,6 +12,7 @@ var powerup_player = instance_place(x, y, obj_player);
 
 if (
     powerup_player != noone
+    && !powerup_player.player_dead
     && !powerup_player.ufo_captured
     && !powerup_player.scalper_captured
 )

@@ -11,7 +11,10 @@
     "name":"PowerUp",
     "path":"folders/Objects/PowerUp.yy",
   },
-  "parentObjectId":null,
+  "parentObjectId":{
+    "name":"par_powerup",
+    "path":"objects/par_powerup/par_powerup.yy",
+  },
   "persistent":false,
   "physicsAngularDamping":0.1,
   "physicsDensity":0.5,

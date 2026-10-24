@@ -213,6 +213,8 @@ function scr_blocker_pick_routed_mask(
     var masks = [1, 2, 4, 8, 3, 6, 12, 9, 7, 11, 13, 14];
     var chosen_mask = 0;
     var total_weight = 0;
+    var target_lane = _controller.blocker_route_target_lane;
+    var toward_target = _safe_lane + sign(target_lane - _safe_lane);
 
     for (var candidate_index = 0;
         candidate_index < array_length(masks);
@@ -245,6 +247,17 @@ function scr_blocker_pick_routed_mask(
 
         if (candidate_mask == _previous_mask) weight *= 0.18;
 
+        // Prefer rows that leave the next adjacent lane physically passable.
+        // This is a weighting, not an override of the real hitbox checks.
+        // It permits gradual movement between the left and right halves.
+        if (toward_target != _safe_lane)
+        {
+            if (scr_blocker_lane_is_safe(
+                candidate_mask, toward_target, _controller
+            )) weight *= 3.5;
+            else weight *= 0.24;
+        }
+
         total_weight += weight;
         if (random(total_weight) < weight) chosen_mask = candidate_mask;
     }
@@ -258,22 +271,42 @@ function scr_blocker_pick_routed_mask(
     return chosen_mask;
 }
 
+// Visit both sides of the playfield in short, randomized arcs rather than
+// an unbounded random walk (which favors the right because of sprite bounds).
+// A lane change happens ONLY when both the old and new lane are open in this
+// obstacle row. Never teleport the reserved route through a blocker.
 function scr_blocker_choose_next_safe_lane(_lane, _mask, _controller)
 {
-    if (random(1) >= 0.42) return _lane;
+    var target = _controller.blocker_route_target_lane;
+    var chosen_lane = _lane;
+    var next_lane = _lane + sign(target - _lane);
 
-    var choices = [];
-    for (var lane_direction = -1;
-        lane_direction <= 1;
-        lane_direction += 2)
+    if (next_lane != _lane
+        && scr_blocker_lane_is_safe(_mask, next_lane, _controller)
+        && random(1) < 0.84)
     {
-        var neighbour = _lane + lane_direction;
-        if (scr_blocker_lane_is_safe(_mask, neighbour, _controller))
-            array_push(choices, neighbour);
+        chosen_lane = next_lane;
     }
 
-    if (array_length(choices) == 0) return _lane;
-    return choices[irandom(array_length(choices) - 1)];
+    if (chosen_lane == target)
+    {
+        _controller.blocker_route_dwell += 1;
+        if (_controller.blocker_route_dwell
+            >= _controller.blocker_route_dwell_goal)
+        {
+            // Alternate halves; vary the exact destination for all 4 lanes.
+            _controller.blocker_route_target_lane = (target < 2)
+                ? irandom_range(2, 3) : irandom_range(0, 1);
+            _controller.blocker_route_dwell = 0;
+            _controller.blocker_route_dwell_goal = irandom_range(4, 8);
+        }
+    }
+    else
+    {
+        _controller.blocker_route_dwell = 0;
+    }
+
+    return chosen_lane;
 }
 
 function scr_blocker_spawn_mask(_mask, _controller)

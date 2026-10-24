@@ -74,6 +74,7 @@ if (!ticket_collected)
 
     if (
         ticket_player != noone
+        && !ticket_player.player_dead
         && !ticket_player.ufo_captured
         && !ticket_player.scalper_captured
     )
