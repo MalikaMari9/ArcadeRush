@@ -92,7 +92,7 @@ if (drop_progress > 0)
 draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
 
-// Temporary Retry control. This can become the scoreboard button later.
+// Continue to the run-result scoreboard.
 var retry_progress = clamp(
     (game_over_time - game_over_retry_delay)
         / game_over_retry_duration,
@@ -146,9 +146,9 @@ if (retry_progress > 0)
     draw_text_transformed(
         box_x,
         retry_y,
-        "Retry",
-        2,
-        2,
+        "CHECK SCORES",
+        1.45,
+        1.45,
         0
     );
 }

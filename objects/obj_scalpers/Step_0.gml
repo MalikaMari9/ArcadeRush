@@ -17,19 +17,22 @@ image_speed = scalper_game_over
 
 if (scalper_entering)
 {
-    scalper_entry_progress = min(
-        scalper_entry_progress
-            + game_delta_seconds() / scalper_entry_duration,
-        1
-    );
-
-    var entry_eased = 1 - power(1 - scalper_entry_progress, 3);
-    y = lerp(scalper_start_y, scalper_rest_y, entry_eased);
-
-    if (scalper_entry_progress >= 1)
+    if (scalper_entry_started)
     {
-        y = scalper_rest_y;
-        scalper_entering = false;
+        scalper_entry_progress = min(
+            scalper_entry_progress
+                + game_delta_seconds() / scalper_entry_duration,
+            1
+        );
+
+        var entry_eased = 1 - power(1 - scalper_entry_progress, 3);
+        y = lerp(scalper_start_y, scalper_rest_y, entry_eased);
+
+        if (scalper_entry_progress >= 1)
+        {
+            y = scalper_rest_y;
+            scalper_entering = false;
+        }
     }
 }
 else
@@ -46,6 +49,10 @@ else
             var bite_target = instance_find(obj_player, 0);
             if (
                 bite_target != noone
+                && (
+                    scalper_controller == noone
+                    || scalper_controller.run_started
+                )
                 && !bite_target.ufo_captured
                 && !bite_target.scalper_captured
                 && !bite_target.invulnerable

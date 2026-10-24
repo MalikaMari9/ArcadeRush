@@ -99,7 +99,11 @@ function scr_collectible_try_powerup(_controller, _lanes)
     var total_weight = 0;
     var chosen_lane = -1;
     var chosen_x = 0;
-    var spawn_y = _controller.powerup_spawn_y + random_range(-36, 36);
+    // Keep the complete scaled pickup above the room so it scrolls into view
+    // instead of popping into existence around the top edge.
+    var spawn_y = -half_h
+        - _controller.powerup_spawn_buffer
+        - random_range(0, 24);
 
     for (var index = 0; index < array_length(_lanes); index++)
     {
@@ -163,9 +167,13 @@ function scr_collectible_try_ticket_trail(_controller, _lanes)
 
     var half_w = sprite_get_width(spr_ticket_1) * 0.5;
     var half_h = sprite_get_height(spr_ticket_1) * 0.5;
-    var base_y = _controller.ticket_trail_start_y
-        - (count - 3) * 20 + random_range(-14, 14);
     var gap = _controller.ticket_trail_spacing + random_range(10, 20);
+    // Position from the trail's lowest ticket upward. Even a five-ticket
+    // formation is therefore fully outside the room on its creation frame.
+    var trail_bottom_y = -half_h
+        - _controller.ticket_spawn_buffer
+        - random_range(0, 14);
+    var base_y = trail_bottom_y - (count - 1) * gap;
 
     var best_lane = -1;
     var best_style = -1;

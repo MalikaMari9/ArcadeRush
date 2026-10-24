@@ -2,10 +2,15 @@ touch_move_x = 0;
 touch_move_y = 0;
 
 var touch_player = instance_find(obj_player, 0);
+var touch_run_controller = instance_find(obj_controller, 0);
 var touch_allowed = touch_player != noone
     && !touch_player.player_dead
     && !touch_player.ufo_captured
     && !touch_player.scalper_captured
+    && (
+        touch_run_controller == noone
+        || touch_run_controller.run_started
+    )
     && !instance_exists(obj_gameover);
 
 if (!touch_allowed)

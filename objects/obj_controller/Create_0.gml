@@ -9,6 +9,16 @@ world_scroll_speed_max = 350;
 world_scroll_delta = 0;
 distance_travelled = 0;
 
+// Hold the new room in a presentation state before the run begins.
+// Phase 0: player entrance, 1: Scalper entrance, 2: countdown.
+// Each number lasts 0.8 seconds, followed by a short GO beat during gameplay.
+run_started = false;
+run_intro_phase = 0;
+countdown_number_duration = 0.8;
+countdown_timer = countdown_number_duration * 3;
+countdown_go_duration = 0.55;
+countdown_go_timer = 0;
+
 // Placeholder run counters. Distance is stored in world pixels and converted
 // only for display so gameplay systems retain the precise progress value.
 distance_pixels_per_metre = 100;
@@ -23,8 +33,8 @@ game_over_hurt_duration = 0.80;
 // open corridor between this row and the previous row. All tuning is here.
 ticket_active_max = 23;
 ticket_rows_since_spawn = 0;
-ticket_trail_start_y = -250;
 ticket_trail_spacing = 120;
+ticket_spawn_buffer = 48;
 ticket_spawn_clearance = 14;
 // Keep recent reward lanes varied without sacrificing reachable placements.
 ticket_lane_heat = [0, 0, 0, 0];
@@ -39,8 +49,8 @@ powerup_spacing_min = 3300;
 powerup_spacing_max = 4600;
 powerup_active_max = 1;
 powerup_last_kind = -1;
-powerup_spawn_y = 85;
 powerup_sprite_scale = 0.64;
+powerup_spawn_buffer = 24;
 powerup_clearance = 20;
 
 // Continuous distance-driven rows. The minimum gap is larger than the

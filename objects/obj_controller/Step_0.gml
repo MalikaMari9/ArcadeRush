@@ -1,6 +1,50 @@
 // Limit the time step so a lag spike cannot move the world an unsafe distance.
 var delta_seconds = game_delta_seconds();
 
+// Do not advance the world, distance, spawn clocks, or difficulty until the
+// opening countdown finishes. Other presentation animation may keep running.
+if (!run_started)
+{
+    world_scroll_delta = 0;
+
+    switch (run_intro_phase)
+    {
+        // Let the cat finish its pop before bringing in the foreground crowd.
+        case 0:
+            var intro_player = instance_find(obj_player, 0);
+            if (intro_player == noone || !intro_player.player_entering)
+            {
+                run_intro_phase = 1;
+
+                var intro_scalpers = instance_find(obj_scalpers, 0);
+                if (intro_scalpers != noone)
+                    intro_scalpers.scalper_entry_started = true;
+            }
+            break;
+
+        // The countdown begins only after the crowd reaches its rest position.
+        case 1:
+            var waiting_scalpers = instance_find(obj_scalpers, 0);
+            if (waiting_scalpers == noone || !waiting_scalpers.scalper_entering)
+                run_intro_phase = 2;
+            break;
+
+        case 2:
+            countdown_timer = max(0, countdown_timer - delta_seconds);
+
+            if (countdown_timer <= 0)
+            {
+                run_started = true;
+                countdown_go_timer = countdown_go_duration;
+            }
+            break;
+    }
+
+    exit;
+}
+
+countdown_go_timer = max(0, countdown_go_timer - delta_seconds);
+
 // A lethal hit is deliberately not an immediate cut. Scalpers finish their
 // release, while a lethal UFO keeps its victim held during the readable beat.
 var game_over_player = instance_find(obj_player, 0);

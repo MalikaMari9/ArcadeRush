@@ -72,3 +72,82 @@ draw_set_alpha(1);
 draw_set_color(c_white);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
+
+// Large central countdown. The number settles from a slight pop; GO appears
+// as gameplay unlocks and fades away without holding the world any longer.
+if ((!run_started && run_intro_phase == 2) || countdown_go_timer > 0)
+{
+    var countdown_old_colour = draw_get_colour();
+    var countdown_old_alpha = draw_get_alpha();
+    var countdown_old_halign = draw_get_halign();
+    var countdown_old_valign = draw_get_valign();
+    var countdown_old_font = draw_get_font();
+    var countdown_text = "";
+    var countdown_scale = 3.2;
+    var countdown_alpha = 1;
+
+    if (!run_started)
+    {
+        var countdown_number = clamp(
+            ceil(countdown_timer / countdown_number_duration),
+            1,
+            3
+        );
+        var countdown_segment_remaining = countdown_timer
+            - (countdown_number - 1) * countdown_number_duration;
+        var countdown_segment_progress = 1 - clamp(
+            countdown_segment_remaining / countdown_number_duration,
+            0,
+            1
+        );
+
+        countdown_text = string(countdown_number);
+        countdown_scale = lerp(
+            4.0,
+            3.2,
+            min(1, countdown_segment_progress * 5)
+        );
+    }
+    else
+    {
+        countdown_text = "GO!";
+        countdown_scale = 3.4;
+        countdown_alpha = clamp(
+            countdown_go_timer / countdown_go_duration,
+            0,
+            1
+        );
+    }
+
+    draw_set_font(fnt_default);
+    draw_set_halign(fa_center);
+    draw_set_valign(fa_middle);
+
+    draw_set_alpha(countdown_alpha * 0.35);
+    draw_set_colour(make_colour_rgb(91, 69, 133));
+    draw_text_transformed(
+        gui_cx + 7,
+        display_get_gui_height() * 0.5 + 9,
+        countdown_text,
+        countdown_scale,
+        countdown_scale,
+        0
+    );
+
+    draw_set_alpha(countdown_alpha);
+    draw_set_colour(make_colour_rgb(181, 157, 211));
+    draw_text_transformed(
+        gui_cx,
+        display_get_gui_height() * 0.5,
+        countdown_text,
+        countdown_scale,
+        countdown_scale,
+        0
+    );
+
+    draw_set_colour(countdown_old_colour);
+    draw_set_alpha(countdown_old_alpha);
+    draw_set_halign(countdown_old_halign);
+    draw_set_valign(countdown_old_valign);
+    draw_set_font(countdown_old_font);
+}

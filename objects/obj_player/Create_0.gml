@@ -42,3 +42,15 @@ ticket_double_visual_time = 0;
 powerup_shield_timer = 0;
 powerup_shield_duration = 10;
 powerup_shield_visual_time = 0;
+
+// The placed room coordinates remain authoritative. Begin fully below the
+// room, then pop into that position before the Scalpers make their entrance.
+player_rest_x = x;
+player_rest_y = y;
+player_entry_start_y = room_height
+    + sprite_get_yoffset(sprite_index) * abs(image_yscale)
+    + 2;
+player_entry_duration = 0.75;
+player_entry_progress = 0;
+player_entering = true;
+y = player_entry_start_y;

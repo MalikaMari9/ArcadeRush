@@ -25,6 +25,7 @@ scalper_start_y = max(room_height, scalper_rest_y)
 scalper_entry_duration = 1.25;
 scalper_entry_progress = 0;
 scalper_entering = true;
+scalper_entry_started = false;
 
 // Let the player enter the artwork slightly before the crowd bites.
 scalper_danger_offset = 60;

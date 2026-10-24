@@ -1,3 +1,33 @@
+// First room beat: rise from below with a restrained overshoot, then settle
+// at the exact position authored in the Room Editor.
+if (player_entering)
+{
+    player_entry_progress = min(
+        1,
+        player_entry_progress
+            + min(delta_time / 1000000, 1 / 15) / player_entry_duration
+    );
+
+    var entry_offset = player_entry_progress - 1;
+    var entry_overshoot = 0.7;
+    var entry_eased = 1
+        + (entry_overshoot + 1) * power(entry_offset, 3)
+        + entry_overshoot * power(entry_offset, 2);
+
+    x = player_rest_x;
+    y = lerp(player_entry_start_y, player_rest_y, entry_eased);
+    player_refresh_appearance();
+    image_speed = 1;
+
+    if (player_entry_progress >= 1)
+    {
+        y = player_rest_y;
+        player_entering = false;
+    }
+
+    exit;
+}
+
 // Recover if a catcher disappears before completing its release sequence.
 if (ufo_captured && !instance_exists(ufo_captor))
 {
@@ -164,6 +194,15 @@ if (player_dead)
     player_refresh_appearance();
     image_alpha = 1;
     image_xscale = 1;
+    image_speed = 1;
+    exit;
+}
+
+// Stay animated but ignore movement until the room countdown reaches GO.
+var run_controller = instance_find(obj_controller, 0);
+if (run_controller != noone && !run_controller.run_started)
+{
+    player_refresh_appearance();
     image_speed = 1;
     exit;
 }

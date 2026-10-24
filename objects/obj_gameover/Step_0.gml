@@ -25,7 +25,24 @@ if (game_over_time >= game_over_retry_delay)
         || (pointer_inside && mouse_check_button_pressed(mb_left))
     )
     {
-        room_restart();
+        var result_controller = instance_find(obj_controller, 0);
+        if (result_controller != noone)
+        {
+            global.last_run_score = 0;
+            global.last_run_distance = floor(
+                result_controller.distance_travelled
+                    / result_controller.distance_pixels_per_metre
+            );
+            global.last_run_tickets = result_controller.run_tickets;
+        }
+        else
+        {
+            global.last_run_score = 0;
+            global.last_run_distance = 0;
+            global.last_run_tickets = 0;
+        }
+
+        room_goto(rm_roomScore);
         exit;
     }
 }
